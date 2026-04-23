@@ -1,6 +1,8 @@
 "use client";
 
 import { CardBody, CardContainer, CardItem } from "@/components/ui/3d-card";
+import { MorphingText } from "@/components/ui/morphing-text";
+import { memo } from "react";
 import { useEffect, useState } from "react";
 
 const navItems = [
@@ -12,13 +14,12 @@ const navItems = [
 ];
 
 const identityLines = [
-  "0-1架构搭建",
-  "1-100迭代",
-  "复杂需求对接",
-  "标准化PRD撰写",
-  "全栈高保真交付",
-  "AI Agent工具链",
-  "拆解梳理多端业务线",
+  "复杂业务拆解",
+  "多端系统梳理",
+  "产品原型设计",
+  "落地验收迭代",
+  "跨角色协同推进",
+  "AI Agent 工作流",
 ];
 
 const titleWords = ["Benji", "产品经理"];
@@ -343,74 +344,35 @@ function FloatingElements() {
   return <OrbitElements />;
 }
 
-function AnimatedHeroTitle() {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [outgoingIndex, setOutgoingIndex] = useState<number | null>(null);
-  const [phase, setPhase] = useState<"idle" | "outgoing" | "incoming">(
-    "idle",
-  );
-
-  useEffect(() => {
-    let idleTimer: number;
-    let incomingTimer: number;
-    let finishTimer: number;
-
-    const run = () => {
-      idleTimer = window.setTimeout(() => {
-        setActiveIndex((current) => {
-          setOutgoingIndex(current);
-          setPhase("outgoing");
-          return current;
-        });
-
-        incomingTimer = window.setTimeout(() => {
-          setActiveIndex((current) => (current + 1) % titleWords.length);
-          setPhase("incoming");
-        }, 280);
-
-        finishTimer = window.setTimeout(() => {
-          setOutgoingIndex(null);
-          setPhase("idle");
-          run();
-        }, 700);
-      }, 2000);
-    };
-
-    run();
-
-    return () => {
-      window.clearTimeout(idleTimer);
-      window.clearTimeout(incomingTimer);
-      window.clearTimeout(finishTimer);
-    };
-  }, []);
-
+const HeroTitleBlock = memo(function HeroTitleBlock() {
   return (
-    <span className="relative block h-[60px] w-full overflow-visible text-center">
-      {outgoingIndex !== null && (
-        <span
-          className={`absolute inset-0 block ${
-            phase === "outgoing" ? "title-fly-out" : "opacity-0"
-          }`}
+    <CardItem
+      translateZ={50}
+      className="w-fit transition duration-200 ease-linear"
+      style={{
+        transform:
+          "translateX(0px) translateY(0px) translateZ(0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg)",
+      }}
+    >
+      <h1 className="border-b-2 border-slate-700 py-6">
+        <div
+          className="relative z-10 inline-block w-[5.8em] whitespace-nowrap px-2 text-center font-coda text-5xl font-bold leading-[60px] text-orange-400 md:text-6xl"
+          style={{
+            fontFamily: 'Coda, "Coda Fallback", cursive, fantasy',
+            fontSize: "60px",
+            lineHeight: "60px",
+            color: "rgb(251, 146, 60)",
+          }}
         >
-          {titleWords[outgoingIndex]}
-        </span>
-      )}
-
-      <span
-        className={`absolute inset-0 block ${
-          phase === "incoming"
-            ? "title-reveal-in"
-            : phase === "outgoing"
-              ? "opacity-0"
-              : "opacity-100"
-        }`}
-      >
-        {titleWords[activeIndex]}
-      </span>
-    </span>
+          <MorphingText
+            className="h-[60px] text-center"
+            texts={titleWords}
+          />
+        </div>
+      </h1>
+    </CardItem>
   );
-}
+});
 
 function TextContent() {
   const [hoveredIdentity, setHoveredIdentity] = useState<number | null>(null);
@@ -430,28 +392,7 @@ function TextContent() {
         </p>
       </CardItem>
 
-      <CardItem
-        translateZ={50}
-        className="w-fit transition duration-200 ease-linear"
-        style={{
-          transform:
-            "translateX(0px) translateY(0px) translateZ(0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg)",
-        }}
-      >
-        <h1 className="border-b-2 border-slate-700 py-6">
-          <div
-            className="relative z-10 inline-block w-[5.8em] whitespace-nowrap px-2 text-center font-coda text-5xl font-bold leading-[60px] text-orange-400 md:text-6xl"
-            style={{
-              fontFamily: 'Coda, "Coda Fallback", cursive, fantasy',
-              fontSize: "60px",
-              lineHeight: "60px",
-              color: "rgb(251, 146, 60)",
-            }}
-          >
-            <AnimatedHeroTitle />
-          </div>
-        </h1>
-      </CardItem>
+      <HeroTitleBlock />
 
       <div className="[transform-style:preserve-3d] [&>*]:[transform-style:preserve-3d]">
         <div className="pt-4 text-end text-sm leading-7 text-slate-700 md:text-lg">
@@ -469,7 +410,7 @@ function TextContent() {
           </CardItem>
           <CardItem
             translateZ={22}
-            className="block w-full"
+            className="flex h-[196px] w-full flex-col justify-between"
             onMouseLeave={() => setHoveredIdentity(null)}
           >
             {identityLines.map((line, index) => (
