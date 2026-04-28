@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { CardBody, CardContainer, CardItem } from "@/components/ui/3d-card";
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 
 const navItems = [
   { label: "影响者", href: "#influencer" },
@@ -21,7 +21,28 @@ const identityLines = [
   "拆解梳理多端业务线",
 ];
 
-const titleWords = ["Benji", "产品经理"];
+const titleItems: ReadonlyArray<{
+  text: string;
+  style?: CSSProperties;
+}> = [
+  {
+    text: "Benji",
+    style: {
+      fontFamily: 'Coda, "Coda Fallback", cursive, fantasy',
+      fontWeight: 700,
+      color: "#4668BE",
+    } as const,
+  },
+  {
+    text: "产品经理",
+    style: {
+      fontFamily:
+        'SimHei, "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif',
+      fontWeight: 800,
+      color: "#4668BE",
+    } as const,
+  },
+] as const;
 
 const topOrbitIcon = "/gpt-logo.png";
 const rightOrbitIcon = "/figma-logo.png";
@@ -350,6 +371,22 @@ function AnimatedHeroTitle() {
     "idle",
   );
 
+  const renderTitleWord = (index: number) => {
+    const item = titleItems[index];
+    const isProductManager = item.text === "产品经理";
+
+    return (
+      <span
+        className="block w-full"
+        data-title-word={isProductManager ? "product-manager" : "benji"}
+        data-font-debug={isProductManager ? "product-manager-sans" : "benji-original"}
+        style={item.style}
+      >
+        {item.text}
+      </span>
+    );
+  };
+
   useEffect(() => {
     let idleTimer: number;
     let incomingTimer: number;
@@ -364,7 +401,7 @@ function AnimatedHeroTitle() {
         });
 
         incomingTimer = window.setTimeout(() => {
-          setActiveIndex((current) => (current + 1) % titleWords.length);
+          setActiveIndex((current) => (current + 1) % titleItems.length);
           setPhase("incoming");
         }, 280);
 
@@ -386,14 +423,17 @@ function AnimatedHeroTitle() {
   }, []);
 
   return (
-    <span className="relative block h-[60px] w-full overflow-visible text-center">
+    <span
+      className="relative block h-[60px] w-full overflow-visible text-center"
+      data-hero-title-debug="animated-hero-title-active"
+    >
       {outgoingIndex !== null && (
         <span
           className={`absolute inset-0 block ${
             phase === "outgoing" ? "title-fly-out" : "opacity-0"
           }`}
         >
-          {titleWords[outgoingIndex]}
+          {renderTitleWord(outgoingIndex)}
         </span>
       )}
 
@@ -406,7 +446,7 @@ function AnimatedHeroTitle() {
               : "opacity-100"
         }`}
       >
-        {titleWords[activeIndex]}
+        {renderTitleWord(activeIndex)}
       </span>
     </span>
   );
@@ -440,12 +480,11 @@ function TextContent() {
       >
         <h1 className="border-b-2 border-slate-700 py-6">
           <div
-            className="relative z-10 inline-block w-[5.8em] whitespace-nowrap px-2 text-center font-coda text-5xl font-bold leading-[60px] text-orange-400 md:text-6xl"
+            className="relative z-10 inline-block w-[5.8em] whitespace-nowrap px-2 text-center text-5xl font-bold leading-[60px] md:text-6xl"
             style={{
-              fontFamily: 'Coda, "Coda Fallback", cursive, fantasy',
               fontSize: "60px",
               lineHeight: "60px",
-              color: "rgb(251, 146, 60)",
+              color: "#4668BE",
             }}
           >
             <AnimatedHeroTitle />
@@ -517,7 +556,7 @@ function HeroCard() {
 
 function HeroContainer() {
   return (
-    <main className="min-h-screen bg-[linear-gradient(to_bottom,#f8fafc_0%,#f1f5f9_100%)] text-slate-700">
+    <main className="min-h-screen text-slate-700">
       <section
         id="home"
         className="relative z-10 min-h-[850px] w-full select-none px-4 pt-[96px] lg:px-16 xl:px-32 2xl:px-44"
@@ -540,3 +579,4 @@ export function HeroSection() {
     </>
   );
 }
+
