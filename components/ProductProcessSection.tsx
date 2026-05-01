@@ -516,18 +516,18 @@ function ProductProcessDesktop() {
     let point: DOMPoint | SVGPoint | PointLike = contactCenterRef.current;
 
     if (pathDistance <= len1 && path1) {
-      point = path1.getPointAtLength(pathDistance);
+      const localDistance = pathDistance;
+      point = path1.getPointAtLength(localDistance);
     } else if (pathDistance <= len1 + len2 && path2) {
-      point = path2.getPointAtLength(pathDistance - len1);
+      const localDistance = pathDistance - len1;
+      point = path2.getPointAtLength(localDistance);
     } else if (path3) {
-      point = path3.getPointAtLength(pathDistance - len1 - len2);
+      const localDistance = pathDistance - len1 - len2;
+      point = path3.getPointAtLength(localDistance);
     }
 
-    const ballX = point.x;
-    const ballY = point.y;
-
-    ballCircle.setAttribute("cx", ballX.toFixed(3));
-    ballCircle.setAttribute("cy", ballY.toFixed(3));
+    ballCircle.setAttribute("cx", point.x.toFixed(3));
+    ballCircle.setAttribute("cy", point.y.toFixed(3));
     ballCircle.style.opacity = "1";
   };
 
@@ -790,7 +790,7 @@ function ProductProcessDesktop() {
             <ProductProcessCopySwitcher activeIndex={contentActiveIndex} />
 
             <svg
-              className="absolute inset-0 pointer-events-none z-0"
+              className="absolute inset-0 pointer-events-none z-20"
               height={BASE_H}
               viewBox={`0 0 ${BASE_W} ${BASE_H}`}
               width={BASE_W}
@@ -824,7 +824,7 @@ function ProductProcessDesktop() {
 
             {PLATFORM_SLOTS.map((platform, index) => (
               <div
-                className="absolute z-20"
+                className="absolute z-10"
                 key={platform.id}
                 style={{
                   left: platform.x,
@@ -853,7 +853,7 @@ function ProductProcessDesktop() {
 
             {PLATFORM_SLOTS.map((platform) => (
               <div
-                className="absolute z-30 flex items-center justify-center"
+                className="absolute z-[40] flex items-center justify-center"
                 key={`${platform.id}-label`}
                 style={{
                   left: platform.x,
@@ -872,7 +872,7 @@ function ProductProcessDesktop() {
             ))}
 
             <svg
-              className="absolute inset-0 pointer-events-none z-[40]"
+              className="absolute inset-0 pointer-events-none z-[30]"
               height={BASE_H}
               viewBox={`0 0 ${BASE_W} ${BASE_H}`}
               width={BASE_W}
