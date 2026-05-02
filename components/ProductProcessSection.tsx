@@ -1,10 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import type { CSSProperties } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const BASE_W = 1684;
 const BASE_H = 729;
+const TAIL_H = 142;
+const TOTAL_STAGE_H = BASE_H + TAIL_H;
 const DEBUG_REFERENCE = false;
 const DEBUG_PANEL = false;
 const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
@@ -21,6 +24,8 @@ const GROW_LENGTH_RATIO = 0.26;
 const ROUTE_FOLLOW_EASE = 0.03;
 const ROUTE_SNAP_THRESHOLD = 0.1;
 const THIRD_SCREEN_ENTRANCE_VH = 0.1;
+const TAIL_REVEAL_SCROLL_MULTIPLIER = 1.8;
+const BOTTOM_TEST_SPACE = 260;
 const MAIN_TITLE = "\u4ea7\u54c1\u662f\u5982\u4f55\u88ab\u505a\u51fa\u6765\u7684";
 const REFERENCE_IMAGES = [
   "/third-screen/ThirdScreen_Stage_State_01.png",
@@ -37,7 +42,7 @@ const PLATFORM_SLOTS = [
 const PATHS = [
   {
     id: "path-01",
-    d: "M600.5 730.8V541.8C600.5 469.4507 659.1507 410.8 731.5 410.8C803.849 410.8 862.5 469.4507 862.5 541.8V577.8",
+    d: "M600.5 721.5V541.8C600.5 469.4507 659.1507 410.8 731.5 410.8C803.849 410.8 862.5 469.4507 862.5 541.8V577.8",
   },
   {
     id: "path-02",
@@ -47,6 +52,21 @@ const PATHS = [
     id: "path-03",
     d: "M1124.5 424.8V235.8C1124.5 163.4507 1183.1507 104.8 1255.5 104.8C1327.849 104.8 1386.5 163.4507 1386.5 235.8V271.8",
   },
+] as const;
+
+const PRODUCT_TAIL_FRAME_H = 142;
+const PRODUCT_TAIL_PLATFORM = {
+  id: "platform-04",
+  label: "\u4ea7\u54c1\u6210\u578b",
+  x: 412,
+  y: BASE_H - 11,
+  w: 374,
+  h: 153,
+  staticOnly: true,
+} as const;
+const PRODUCT_PLATFORM_SLOTS = [
+  ...PLATFORM_SLOTS,
+  PRODUCT_TAIL_PLATFORM,
 ] as const;
 
 function buildRoundedStarPath(
@@ -184,6 +204,7 @@ type LayoutMetrics = {
   scale: number;
   stickyHeight: number;
   stickyTop: number;
+  tailVisualHeight: number;
 };
 
 type RectMetrics = {
@@ -237,6 +258,7 @@ function createDefaultLayout(): LayoutMetrics {
     scale: 1,
     stickyHeight: BASE_H,
     stickyTop: 0,
+    tailVisualHeight: TAIL_H,
   };
 }
 
@@ -502,6 +524,7 @@ function ProductProcessDesktop() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const stickyRef = useRef<HTMLDivElement | null>(null);
   const stageShellRef = useRef<HTMLDivElement | null>(null);
+  const designLayerRef = useRef<HTMLDivElement | null>(null);
   const pathRefs = useRef<Array<SVGPathElement | null>>([]);
   const ballCircleRef = useRef<SVGCircleElement | null>(null);
   const starsGroupRef = useRef<SVGGElement | null>(null);
@@ -510,11 +533,14 @@ function ProductProcessDesktop() {
   const smallStarShapeRef = useRef<SVGGElement | null>(null);
   const bigStarShapeRef = useRef<SVGGElement | null>(null);
   const measureFrameRef = useRef<number | null>(null);
+  const progressFrameRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const targetProgressRef = useRef(0);
   const routeTargetRef = useRef(0);
   const routeDisplayRef = useRef(0);
+  const tailProgressRef = useRef(0);
   const entranceDistanceRef = useRef(BASE_H * THIRD_SCREEN_ENTRANCE_VH);
+  const tailVisualHeightRef = useRef(TAIL_H);
   const motionGeometryRef = useRef<MotionGeometry>(createDefaultMotionGeometry());
   const pathLengthsRef = useRef<number[]>([590, 590, 590]);
   const totalPathLengthRef = useRef(1770);
@@ -528,15 +554,21 @@ function ProductProcessDesktop() {
     createDefaultMotionGeometry,
   );
 
-  const renderScene = (routeDisplay: number) => {
+  const renderScene = (routeDisplay: number, tailProgress: number) => {
     const ballCircle = ballCircleRef.current;
     const starsGroup = starsGroupRef.current;
     const smallStar = smallStarRef.current;
     const bigStar = bigStarRef.current;
     const smallStarShape = smallStarShapeRef.current;
     const bigStarShape = bigStarShapeRef.current;
+    const designLayer = designLayerRef.current;
     const [len1 = 590, len2 = 590, len3 = 590] = pathLengthsRef.current;
     const totalLength = Math.max(totalPathLengthRef.current, 1);
+
+    if (designLayer) {
+      const cameraY = -clamp(tailProgress, 0, 1) * TAIL_H;
+      designLayer.style.transform = `translateY(${(cameraY * layout.scale).toFixed(3)}px) scale(${layout.scale})`;
+    }
 
     if (!ballCircle) {
       return;
@@ -727,7 +759,7 @@ function ProductProcessDesktop() {
     setMotionGeometry(nextGeometry);
 
     requestAnimationFrame(() => {
-      renderScene(routeDisplayRef.current);
+      renderScene(routeDisplayRef.current, tailProgressRef.current);
     });
   }, []);
 
@@ -735,8 +767,8 @@ function ProductProcessDesktop() {
     motionGeometryRef.current = motionGeometry;
     pathLengthsRef.current = pathLengths;
     totalPathLengthRef.current = pathLengths.reduce((total, length) => total + length, 0);
-    renderScene(routeDisplayRef.current);
-  }, [motionGeometry, pathLengths]);
+    renderScene(routeDisplayRef.current, tailProgressRef.current);
+  }, [layout.scale, motionGeometry, pathLengths]);
 
   useEffect(() => {
     const measureLayout = () => {
@@ -764,6 +796,7 @@ function ProductProcessDesktop() {
         scale,
         stickyHeight: availableHeightRaw,
         stickyTop: headerHeight,
+        tailVisualHeight: TAIL_H * scale * TAIL_REVEAL_SCROLL_MULTIPLIER,
       };
 
       setLayout((previous) => {
@@ -773,7 +806,8 @@ function ProductProcessDesktop() {
           Math.abs(previous.headerHeight - nextLayout.headerHeight) < 0.5 &&
           Math.abs(previous.scale - nextLayout.scale) < 0.001 &&
           Math.abs(previous.stickyHeight - nextLayout.stickyHeight) < 0.5 &&
-          Math.abs(previous.stickyTop - nextLayout.stickyTop) < 0.5
+          Math.abs(previous.stickyTop - nextLayout.stickyTop) < 0.5 &&
+          Math.abs(previous.tailVisualHeight - nextLayout.tailVisualHeight) < 0.5
         ) {
           return previous;
         }
@@ -785,6 +819,7 @@ function ProductProcessDesktop() {
         availableHeightRaw * THIRD_SCREEN_ENTRANCE_VH,
         0,
       );
+      tailVisualHeightRef.current = nextLayout.tailVisualHeight;
 
       if (IS_DEVELOPMENT && DEBUG_PANEL && section && sticky) {
         setDebugMetrics({
@@ -813,21 +848,37 @@ function ProductProcessDesktop() {
         entranceDistanceRef.current,
         Math.max(scrollable - 1, 0),
       );
-      const interactionRange = Math.max(scrollable - entranceDistance, 1);
+      const tailRevealRange = Math.min(
+        tailVisualHeightRef.current,
+        Math.max(scrollable - entranceDistance, 1),
+      );
+      const interactionRange = Math.max(
+        scrollable - entranceDistance - tailRevealRange,
+        1,
+      );
 
       if (scrolledWithinSection <= entranceDistance) {
         targetProgressRef.current = 0;
+        tailProgressRef.current = 0;
         return;
       }
 
-      targetProgressRef.current = clamp(
-        (scrolledWithinSection - entranceDistance) / interactionRange,
+      const interactionScrolled = clamp(
+        scrolledWithinSection - entranceDistance,
         0,
-        1,
+        interactionRange,
       );
+      const tailScrolled = clamp(
+        scrolledWithinSection - entranceDistance - interactionRange,
+        0,
+        tailRevealRange,
+      );
+
+      targetProgressRef.current = clamp(interactionScrolled / interactionRange, 0, 1);
+      tailProgressRef.current = clamp(tailScrolled / tailRevealRange, 0, 1);
     };
 
-    const scheduleFrame = () => {
+    const scheduleMeasureFrame = () => {
       if (measureFrameRef.current !== null) {
         cancelAnimationFrame(measureFrameRef.current);
       }
@@ -838,9 +889,19 @@ function ProductProcessDesktop() {
       });
     };
 
-    scheduleFrame();
-    window.addEventListener("resize", scheduleFrame);
-    window.addEventListener("scroll", scheduleFrame, { passive: true });
+    const scheduleProgressFrame = () => {
+      if (progressFrameRef.current !== null) {
+        cancelAnimationFrame(progressFrameRef.current);
+      }
+
+      progressFrameRef.current = requestAnimationFrame(() => {
+        updateTargetProgress();
+      });
+    };
+
+    scheduleMeasureFrame();
+    window.addEventListener("resize", scheduleMeasureFrame);
+    window.addEventListener("scroll", scheduleProgressFrame, { passive: true });
 
     const amplifyWheel = (event: WheelEvent) => {
       const section = sectionRef.current;
@@ -854,15 +915,46 @@ function ProductProcessDesktop() {
       const scrolledWithinSection = clamp(-rect.top, 0, scrollable);
       const interactionStartReached =
         scrolledWithinSection >= entranceDistanceRef.current - 1;
+      const tailRevealRange = Math.min(
+        tailVisualHeightRef.current,
+        Math.max(scrollable - entranceDistanceRef.current, 1),
+      );
+      const interactionRange = Math.max(
+        scrollable - entranceDistanceRef.current - tailRevealRange,
+        1,
+      );
+      const tailScrolled = clamp(
+        scrolledWithinSection - entranceDistanceRef.current - interactionRange,
+        0,
+        tailRevealRange,
+      );
+      const isTailRevealActive =
+        scrolledWithinSection >=
+        entranceDistanceRef.current + interactionRange - 1;
+      const tailProgress =
+        tailRevealRange > 0 ? clamp(tailScrolled / tailRevealRange, 0, 1) : 1;
       const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
       const isAnimatingSection =
         targetProgressRef.current > 0 && targetProgressRef.current < 1;
+      const totalPathLength = Math.max(totalPathLengthRef.current, 1);
+      const routeLength = totalPathLength + totalPathLength * GROW_LENGTH_RATIO;
+      const isThirdScreenComplete =
+        routeDisplayRef.current >= routeLength - ROUTE_SNAP_THRESHOLD &&
+        tailProgress >= 0.999;
 
       if (!isVisible && !isAnimatingSection) {
         return;
       }
 
       if (!interactionStartReached) {
+        return;
+      }
+
+      if (isTailRevealActive) {
+        return;
+      }
+
+      if (isThirdScreenComplete && event.deltaY > 0) {
         return;
       }
 
@@ -889,9 +981,12 @@ function ProductProcessDesktop() {
       if (measureFrameRef.current !== null) {
         cancelAnimationFrame(measureFrameRef.current);
       }
+      if (progressFrameRef.current !== null) {
+        cancelAnimationFrame(progressFrameRef.current);
+      }
 
-      window.removeEventListener("resize", scheduleFrame);
-      window.removeEventListener("scroll", scheduleFrame);
+      window.removeEventListener("resize", scheduleMeasureFrame);
+      window.removeEventListener("scroll", scheduleProgressFrame);
       window.removeEventListener("wheel", amplifyWheel);
     };
   }, []);
@@ -914,7 +1009,7 @@ function ProductProcessDesktop() {
       routeTargetRef.current = nextRouteTarget;
       routeDisplayRef.current = routeDisplay;
 
-      renderScene(routeDisplay);
+      renderScene(routeDisplay, tailProgressRef.current);
       animationFrameRef.current = requestAnimationFrame(tick);
     };
 
@@ -928,27 +1023,34 @@ function ProductProcessDesktop() {
   }, []);
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative hidden h-[340vh] min-[900px]:block"
-      style={{ marginTop: 80 }}
-    >
-      <div
-        ref={stickyRef}
-        className="sticky overflow-hidden"
+    <>
+      <section
+        ref={sectionRef}
+        className="relative hidden h-[340vh] min-[900px]:block"
         style={{
-          top: layout.stickyTop,
-          height: layout.stickyHeight,
+          marginTop: 80,
+          height: `calc(340vh + ${layout.tailVisualHeight}px)`,
+          overflowX: "clip",
         }}
       >
-        <div ref={stageShellRef} className="relative h-full w-full overflow-hidden">
+        <div
+          ref={stickyRef}
+          className="sticky"
+          style={{
+            top: layout.stickyTop,
+            height: layout.stickyHeight,
+            overflow: "visible",
+          }}
+        >
+          <div ref={stageShellRef} className="relative h-full w-full" style={{ overflow: "clip" }}>
           <div
+            ref={designLayerRef}
             className="relative"
             style={{
               width: BASE_W,
-              height: BASE_H,
+              height: TOTAL_STAGE_H,
               transformOrigin: "top left",
-              transform: `scale(${layout.scale})`,
+              transform: `translateY(0px) scale(${layout.scale})`,
               willChange: "transform",
             }}
           >
@@ -998,8 +1100,8 @@ function ProductProcessDesktop() {
 
             <svg
               className="absolute inset-0 pointer-events-none z-20"
-              height={BASE_H}
-              viewBox={`0 0 ${BASE_W} ${BASE_H}`}
+              height={TOTAL_STAGE_H}
+              viewBox={`0 0 ${BASE_W} ${TOTAL_STAGE_H}`}
               width={BASE_W}
             >
               {motionGeometry.masterPathD ? (
@@ -1029,7 +1131,7 @@ function ProductProcessDesktop() {
               ))}
             </svg>
 
-            {PLATFORM_SLOTS.map((platform, index) => (
+            {PRODUCT_PLATFORM_SLOTS.map((platform, index) => (
               <div
                 className="absolute z-10"
                 key={platform.id}
@@ -1051,42 +1153,38 @@ function ProductProcessDesktop() {
                     width: "100%",
                     height: "100%",
                     objectFit: "contain",
-                    display: "block",
-                  }}
-                  width={platform.w}
-                />
-              </div>
-            ))}
+                  display: "block",
+                }}
+                width={platform.w}
+              />
+            </div>
+          ))}
 
-            {PLATFORM_SLOTS.map((platform) => (
-              <div
-                className="absolute z-[40] flex items-center justify-center"
+            {PRODUCT_PLATFORM_SLOTS.map((platform) => (
+              <PlatformLabel
                 key={`${platform.id}-label`}
+                label={platform.label}
                 style={{
                   left: platform.x,
                   top: platform.y,
                   width: platform.w,
                   height: platform.h,
-                  color: "rgba(91, 74, 62, 0.7)",
-                  fontSize: 27,
-                  fontWeight: 600,
-                  letterSpacing: "-0.02em",
                   transform: "translateY(-2px)",
+                  zIndex: 40,
+                  ...platformLabelTextStyle,
                 }}
-              >
-                {platform.label}
-              </div>
+              />
             ))}
 
             <svg
               className="absolute inset-0 pointer-events-none z-[30]"
-              height={BASE_H}
-              viewBox={`0 0 ${BASE_W} ${BASE_H}`}
+              height={TOTAL_STAGE_H}
+              viewBox={`0 0 ${BASE_W} ${TOTAL_STAGE_H}`}
               width={BASE_W}
             >
               <circle
                 cx={600.5}
-                cy={730.8}
+                cy={721.5}
                 fill={ORANGE}
                 r={BALL_RADIUS}
                 ref={ballCircleRef}
@@ -1129,40 +1227,49 @@ function ProductProcessDesktop() {
                 </g>
               </g>
             </svg>
+            </div>
           </div>
         </div>
-      </div>
-      {IS_DEVELOPMENT && DEBUG_PANEL && debugMetrics ? (
-        <div
-          style={{
-            position: "fixed",
-            right: 16,
-            bottom: 16,
-            zIndex: 99999,
-            background: "rgba(0, 0, 0, 0.76)",
-            color: "#fff",
-            fontSize: 12,
-            lineHeight: 1.45,
-            padding: "10px 12px",
-            borderRadius: 10,
-            width: 380,
-            pointerEvents: "none",
-            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-          }}
-        >
-          <div>{`window.innerWidth: ${debugMetrics.innerWidth}`}</div>
-          <div>{`window.innerHeight: ${debugMetrics.innerHeight}`}</div>
-          <div>{`window.devicePixelRatio: ${debugMetrics.devicePixelRatio}`}</div>
-          <div>{`header.getBoundingClientRect().height: ${debugMetrics.headerHeight.toFixed(1)}`}</div>
-          <div>{`availableHeight = window.innerHeight - headerHeight: ${debugMetrics.availableHeightRaw.toFixed(1)}`}</div>
-          <div>{`section rect: ${formatRect(debugMetrics.sectionRect)}`}</div>
-          <div>{`sticky rect: ${formatRect(debugMetrics.stickyRect)}`}</div>
-          <div>{`stage base: ${BASE_W} x ${BASE_H}`}</div>
-          <div>{`stageScale: ${layout.scale.toFixed(4)}`}</div>
-          <div>{`stage displayed: ${(BASE_W * layout.scale).toFixed(1)} x ${(BASE_H * layout.scale).toFixed(1)}`}</div>
-        </div>
-      ) : null}
-    </section>
+        {IS_DEVELOPMENT && DEBUG_PANEL && debugMetrics ? (
+          <div
+            style={{
+              position: "fixed",
+              right: 16,
+              bottom: 16,
+              zIndex: 99999,
+              background: "rgba(0, 0, 0, 0.76)",
+              color: "#fff",
+              fontSize: 12,
+              lineHeight: 1.45,
+              padding: "10px 12px",
+              borderRadius: 10,
+              width: 380,
+              pointerEvents: "none",
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+            }}
+          >
+            <div>{`window.innerWidth: ${debugMetrics.innerWidth}`}</div>
+            <div>{`window.innerHeight: ${debugMetrics.innerHeight}`}</div>
+            <div>{`window.devicePixelRatio: ${debugMetrics.devicePixelRatio}`}</div>
+            <div>{`header.getBoundingClientRect().height: ${debugMetrics.headerHeight.toFixed(1)}`}</div>
+            <div>{`availableHeight = window.innerHeight - headerHeight: ${debugMetrics.availableHeightRaw.toFixed(1)}`}</div>
+            <div>{`section rect: ${formatRect(debugMetrics.sectionRect)}`}</div>
+            <div>{`sticky rect: ${formatRect(debugMetrics.stickyRect)}`}</div>
+            <div>{`stage base: ${BASE_W} x ${BASE_H}`}</div>
+            <div>{`stageScale: ${layout.scale.toFixed(4)}`}</div>
+            <div>{`stage displayed: ${(BASE_W * layout.scale).toFixed(1)} x ${(BASE_H * layout.scale).toFixed(1)}`}</div>
+          </div>
+        ) : null}
+      </section>
+      <div
+        aria-hidden="true"
+        className="hidden min-[900px]:block"
+        style={{
+          height: BOTTOM_TEST_SPACE,
+          overflowX: "clip",
+        }}
+      />
+    </>
   );
 }
 
@@ -1216,6 +1323,33 @@ function ProductProcessMobile() {
         </div>
       </div>
     </section>
+  );
+}
+
+const platformLabelTextStyle: CSSProperties = {
+  color: "rgba(91, 74, 62, 0.7)",
+  fontSize: 27,
+  fontWeight: 600,
+  letterSpacing: "-0.02em",
+  lineHeight: 1,
+  textAlign: "center",
+  whiteSpace: "nowrap",
+};
+
+function PlatformLabel({
+  label,
+  style,
+}: {
+  label: string;
+  style: CSSProperties;
+}) {
+  return (
+    <div
+      className="absolute flex items-center justify-center"
+      style={style}
+    >
+      {label}
+    </div>
   );
 }
 
