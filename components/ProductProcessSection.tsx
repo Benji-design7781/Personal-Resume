@@ -9,12 +9,18 @@ const DEBUG_REFERENCE = false;
 const DEBUG_PANEL = false;
 const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
 const MOBILE_BREAKPOINT = 900;
-const WHEEL_PROGRESS_MULTIPLIER = 2.6;
+const TRACK_WHEEL_GAIN = 2.6;
+const FINALE_WHEEL_GAIN = 1.6;
 const ORANGE = "#4567BE";
 const BALL_RADIUS = 8;
+const FINAL_BADGE_RADIUS = 54;
 const TRACK_STROKE_WIDTH = 3;
 const SAFE_OFFSET = BALL_RADIUS + TRACK_STROKE_WIDTH / 2 + 2;
 const PATH_SAMPLE_POINTS = 48;
+const GROW_LENGTH_RATIO = 0.26;
+const ROUTE_FOLLOW_EASE = 0.03;
+const ROUTE_SNAP_THRESHOLD = 0.1;
+const THIRD_SCREEN_ENTRANCE_VH = 0.1;
 const MAIN_TITLE = "\u4ea7\u54c1\u662f\u5982\u4f55\u88ab\u505a\u51fa\u6765\u7684";
 const REFERENCE_IMAGES = [
   "/third-screen/ThirdScreen_Stage_State_01.png",
@@ -42,6 +48,60 @@ const PATHS = [
     d: "M1124.5 424.8V235.8C1124.5 163.4507 1183.1507 104.8 1255.5 104.8C1327.849 104.8 1386.5 163.4507 1386.5 235.8V271.8",
   },
 ] as const;
+
+function buildRoundedStarPath(
+  outerRadius: number,
+  innerRadius: number,
+  cornerRadius: number,
+) {
+  const vertexCount = 10;
+  const vertices = Array.from({ length: vertexCount }, (_, index) => {
+    const radius = index % 2 === 0 ? outerRadius : innerRadius;
+    const angle = -Math.PI / 2 + (index * Math.PI) / 5;
+
+    return {
+      x: Math.cos(angle) * radius,
+      y: Math.sin(angle) * radius,
+    };
+  });
+  const rounded = vertices.map((vertex, index) => {
+    const previous = vertices[(index - 1 + vertexCount) % vertexCount];
+    const next = vertices[(index + 1) % vertexCount];
+    const previousLength = Math.hypot(previous.x - vertex.x, previous.y - vertex.y);
+    const nextLength = Math.hypot(next.x - vertex.x, next.y - vertex.y);
+    const radius = Math.min(cornerRadius, previousLength * 0.42, nextLength * 0.42);
+    const before = {
+      x: vertex.x + ((previous.x - vertex.x) / previousLength) * radius,
+      y: vertex.y + ((previous.y - vertex.y) / previousLength) * radius,
+    };
+    const after = {
+      x: vertex.x + ((next.x - vertex.x) / nextLength) * radius,
+      y: vertex.y + ((next.y - vertex.y) / nextLength) * radius,
+    };
+
+    return { after, before, vertex };
+  });
+  const formatPoint = (point: { x: number; y: number }) =>
+    `${point.x.toFixed(3)} ${point.y.toFixed(3)}`;
+  const commands = [`M${formatPoint(rounded[0].after)}`];
+
+  for (let index = 1; index < vertexCount; index += 1) {
+    commands.push(
+      `L${formatPoint(rounded[index].before)}`,
+      `Q${formatPoint(rounded[index].vertex)} ${formatPoint(rounded[index].after)}`,
+    );
+  }
+
+  commands.push(
+    `L${formatPoint(rounded[0].before)}`,
+    `Q${formatPoint(rounded[0].vertex)} ${formatPoint(rounded[0].after)}`,
+    "Z",
+  );
+
+  return commands.join("");
+}
+
+const ROUNDED_STAR_PATH = buildRoundedStarPath(23, 12.2, 5.6);
 
 const STATES = [
   {
@@ -444,11 +504,17 @@ function ProductProcessDesktop() {
   const stageShellRef = useRef<HTMLDivElement | null>(null);
   const pathRefs = useRef<Array<SVGPathElement | null>>([]);
   const ballCircleRef = useRef<SVGCircleElement | null>(null);
+  const starsGroupRef = useRef<SVGGElement | null>(null);
+  const smallStarRef = useRef<SVGGElement | null>(null);
+  const bigStarRef = useRef<SVGGElement | null>(null);
+  const smallStarShapeRef = useRef<SVGGElement | null>(null);
+  const bigStarShapeRef = useRef<SVGGElement | null>(null);
   const measureFrameRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const targetProgressRef = useRef(0);
-  const targetDistanceRef = useRef(0);
-  const displayDistanceRef = useRef(0);
+  const routeTargetRef = useRef(0);
+  const routeDisplayRef = useRef(0);
+  const entranceDistanceRef = useRef(BASE_H * THIRD_SCREEN_ENTRANCE_VH);
   const motionGeometryRef = useRef<MotionGeometry>(createDefaultMotionGeometry());
   const pathLengthsRef = useRef<number[]>([590, 590, 590]);
   const totalPathLengthRef = useRef(1770);
@@ -462,8 +528,13 @@ function ProductProcessDesktop() {
     createDefaultMotionGeometry,
   );
 
-  const renderScene = (displayDistance: number) => {
+  const renderScene = (routeDisplay: number) => {
     const ballCircle = ballCircleRef.current;
+    const starsGroup = starsGroupRef.current;
+    const smallStar = smallStarRef.current;
+    const bigStar = bigStarRef.current;
+    const smallStarShape = smallStarShapeRef.current;
+    const bigStarShape = bigStarShapeRef.current;
     const [len1 = 590, len2 = 590, len3 = 590] = pathLengthsRef.current;
     const totalLength = Math.max(totalPathLengthRef.current, 1);
 
@@ -471,7 +542,9 @@ function ProductProcessDesktop() {
       return;
     }
 
-    const pathDistance = clamp(displayDistance, 0, totalLength);
+    const growLength = totalLength * GROW_LENGTH_RATIO;
+    const pathDistance = clamp(routeDisplay, 0, totalLength);
+    const growRaw = clamp((routeDisplay - totalLength) / Math.max(growLength, 1), 0, 1);
     const revealLengths = [
       clamp(pathDistance, 0, len1),
       clamp(pathDistance - len1, 0, len2),
@@ -526,9 +599,107 @@ function ProductProcessDesktop() {
       point = path3.getPointAtLength(localDistance);
     }
 
-    ballCircle.setAttribute("cx", point.x.toFixed(3));
-    ballCircle.setAttribute("cy", point.y.toFixed(3));
+    const growProgress = growRaw;
+    const easedGrowProgress =
+      growProgress <= 0
+        ? 0
+        : growProgress >= 1
+          ? 1
+          : growProgress *
+            growProgress *
+            growProgress *
+            (growProgress * (growProgress * 6 - 15) + 10);
+
+    if (!starsGroup || !smallStar || !bigStar || !smallStarShape || !bigStarShape) {
+      ballCircle.setAttribute("cx", point.x.toFixed(3));
+      ballCircle.setAttribute("cy", point.y.toFixed(3));
+      ballCircle.setAttribute("r", String(BALL_RADIUS));
+      ballCircle.style.opacity = "1";
+      return;
+    }
+
+    if (easedGrowProgress <= 0.0001) {
+      ballCircle.setAttribute("cx", point.x.toFixed(3));
+      ballCircle.setAttribute("cy", point.y.toFixed(3));
+      ballCircle.setAttribute("r", String(BALL_RADIUS));
+      ballCircle.style.opacity = "1";
+      smallStar.style.opacity = "0";
+      bigStar.style.opacity = "0";
+      smallStar.setAttribute("transform", "translate(0, 0)");
+      bigStar.setAttribute("transform", "translate(0, 0)");
+      smallStarShape.setAttribute("transform", "rotate(0) scale(0)");
+      bigStarShape.setAttribute("transform", "rotate(0) scale(0)");
+      return;
+    }
+
+    const finalPoint = contactCenterRef.current;
+    const badgeRadius =
+      BALL_RADIUS + (FINAL_BADGE_RADIUS - BALL_RADIUS) * easedGrowProgress;
+    const badgeCx = finalPoint.x;
+    const badgeCy = finalPoint.y - (badgeRadius - BALL_RADIUS);
+
+    ballCircle.setAttribute("cx", badgeCx.toFixed(3));
+    ballCircle.setAttribute("cy", badgeCy.toFixed(3));
+    ballCircle.setAttribute("r", badgeRadius.toFixed(3));
     ballCircle.style.opacity = "1";
+
+    starsGroup.setAttribute(
+      "transform",
+      `translate(${badgeCx.toFixed(3)}, ${badgeCy.toFixed(3)})`,
+    );
+
+    const smallStarProgress = clamp((growProgress - 0.1) / 0.62, 0, 1);
+    const bigStarProgress = clamp((growProgress - 0.18) / 0.64, 0, 1);
+    const sharedRotateProgress = clamp((growProgress - 0.12) / 0.58, 0, 1);
+    const easedSmallStar =
+      smallStarProgress *
+      smallStarProgress *
+      smallStarProgress *
+      (smallStarProgress * (smallStarProgress * 6 - 15) + 10);
+    const easedBigStar =
+      bigStarProgress *
+      bigStarProgress *
+      bigStarProgress *
+      (bigStarProgress * (bigStarProgress * 6 - 15) + 10);
+    const easedRotateProgress =
+      sharedRotateProgress *
+      sharedRotateProgress *
+      sharedRotateProgress *
+      (sharedRotateProgress * (sharedRotateProgress * 6 - 15) + 10);
+    const smallStarStartX = -0.34 * badgeRadius;
+    const smallStarStartY = -0.24 * badgeRadius;
+    const smallStarFinalX = -0.18 * badgeRadius;
+    const smallStarFinalY = -0.14 * badgeRadius;
+    const smallStarX =
+      smallStarStartX + (smallStarFinalX - smallStarStartX) * easedSmallStar;
+    const smallStarY =
+      smallStarStartY + (smallStarFinalY - smallStarStartY) * easedSmallStar;
+    const bigStarX = 0.1 * badgeRadius;
+    const bigStarY = 0.08 * badgeRadius;
+
+    smallStar.setAttribute(
+      "transform",
+      `translate(${smallStarX.toFixed(3)}, ${smallStarY.toFixed(3)})`,
+    );
+    smallStarShape.setAttribute(
+      "transform",
+      `rotate(${(easedRotateProgress * 420).toFixed(3)}) scale(${(
+        0.52 * easedSmallStar
+      ).toFixed(4)})`,
+    );
+    smallStar.style.opacity = smallStarProgress.toFixed(3);
+
+    bigStar.setAttribute(
+      "transform",
+      `translate(${bigStarX.toFixed(3)}, ${bigStarY.toFixed(3)})`,
+    );
+    bigStarShape.setAttribute(
+      "transform",
+      `rotate(${(easedRotateProgress * 360).toFixed(3)}) scale(${(
+        0.79 * easedBigStar
+      ).toFixed(4)})`,
+    );
+    bigStar.style.opacity = bigStarProgress.toFixed(3);
   };
 
   useLayoutEffect(() => {
@@ -556,7 +727,7 @@ function ProductProcessDesktop() {
     setMotionGeometry(nextGeometry);
 
     requestAnimationFrame(() => {
-      renderScene(displayDistanceRef.current);
+      renderScene(routeDisplayRef.current);
     });
   }, []);
 
@@ -564,7 +735,7 @@ function ProductProcessDesktop() {
     motionGeometryRef.current = motionGeometry;
     pathLengthsRef.current = pathLengths;
     totalPathLengthRef.current = pathLengths.reduce((total, length) => total + length, 0);
-    renderScene(displayDistanceRef.current);
+    renderScene(routeDisplayRef.current);
   }, [motionGeometry, pathLengths]);
 
   useEffect(() => {
@@ -610,6 +781,11 @@ function ProductProcessDesktop() {
         return nextLayout;
       });
 
+      entranceDistanceRef.current = Math.max(
+        availableHeightRaw * THIRD_SCREEN_ENTRANCE_VH,
+        0,
+      );
+
       if (IS_DEVELOPMENT && DEBUG_PANEL && section && sticky) {
         setDebugMetrics({
           availableHeightRaw,
@@ -632,9 +808,23 @@ function ProductProcessDesktop() {
 
       const rect = section.getBoundingClientRect();
       const scrollable = Math.max(section.offsetHeight - window.innerHeight, 1);
-      targetProgressRef.current = clamp(-rect.top / scrollable, 0, 1);
-      targetDistanceRef.current =
-        targetProgressRef.current * Math.max(totalPathLengthRef.current, 1);
+      const scrolledWithinSection = clamp(-rect.top, 0, scrollable);
+      const entranceDistance = Math.min(
+        entranceDistanceRef.current,
+        Math.max(scrollable - 1, 0),
+      );
+      const interactionRange = Math.max(scrollable - entranceDistance, 1);
+
+      if (scrolledWithinSection <= entranceDistance) {
+        targetProgressRef.current = 0;
+        return;
+      }
+
+      targetProgressRef.current = clamp(
+        (scrolledWithinSection - entranceDistance) / interactionRange,
+        0,
+        1,
+      );
     };
 
     const scheduleFrame = () => {
@@ -660,6 +850,10 @@ function ProductProcessDesktop() {
       }
 
       const rect = section.getBoundingClientRect();
+      const scrollable = Math.max(section.offsetHeight - window.innerHeight, 1);
+      const scrolledWithinSection = clamp(-rect.top, 0, scrollable);
+      const interactionStartReached =
+        scrolledWithinSection >= entranceDistanceRef.current - 1;
       const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
       const isAnimatingSection =
         targetProgressRef.current > 0 && targetProgressRef.current < 1;
@@ -668,7 +862,15 @@ function ProductProcessDesktop() {
         return;
       }
 
-      const extraDeltaY = event.deltaY * (WHEEL_PROGRESS_MULTIPLIER - 1);
+      if (!interactionStartReached) {
+        return;
+      }
+
+      const wheelGain =
+        routeTargetRef.current < Math.max(totalPathLengthRef.current, 1)
+          ? TRACK_WHEEL_GAIN
+          : FINALE_WHEEL_GAIN;
+      const extraDeltaY = event.deltaY * (wheelGain - 1);
 
       if (Math.abs(extraDeltaY) < 0.01) {
         return;
@@ -696,22 +898,23 @@ function ProductProcessDesktop() {
 
   useEffect(() => {
     const tick = () => {
-      const target = targetProgressRef.current;
-      targetDistanceRef.current = target * Math.max(totalPathLengthRef.current, 1);
+      const totalPathLength = Math.max(totalPathLengthRef.current, 1);
+      const routeLength = totalPathLength + totalPathLength * GROW_LENGTH_RATIO;
+      const nextRouteTarget = targetProgressRef.current * routeLength;
+      let routeDisplay = routeDisplayRef.current;
+      const routeDiff = nextRouteTarget - routeDisplay;
 
-      const targetDistance = targetDistanceRef.current;
-      let displayDistance = displayDistanceRef.current;
-      const diff = targetDistance - displayDistance;
+      routeDisplay += routeDiff * ROUTE_FOLLOW_EASE;
 
-      displayDistance += diff * 0.03;
-
-      if (Math.abs(diff) < 0.1) {
-        displayDistance = targetDistance;
+      if (Math.abs(routeDiff) < ROUTE_SNAP_THRESHOLD) {
+        routeDisplay = nextRouteTarget;
       }
 
-      displayDistance = clamp(displayDistance, 0, Math.max(totalPathLengthRef.current, 1));
-      displayDistanceRef.current = displayDistance;
-      renderScene(displayDistance);
+      routeDisplay = clamp(routeDisplay, 0, routeLength);
+      routeTargetRef.current = nextRouteTarget;
+      routeDisplayRef.current = routeDisplay;
+
+      renderScene(routeDisplay);
       animationFrameRef.current = requestAnimationFrame(tick);
     };
 
@@ -725,7 +928,11 @@ function ProductProcessDesktop() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative hidden h-[340vh] min-[900px]:block">
+    <section
+      ref={sectionRef}
+      className="relative hidden h-[340vh] min-[900px]:block"
+      style={{ marginTop: 80 }}
+    >
       <div
         ref={stickyRef}
         className="sticky overflow-hidden"
@@ -884,6 +1091,43 @@ function ProductProcessDesktop() {
                 r={BALL_RADIUS}
                 ref={ballCircleRef}
               />
+              <g style={{ pointerEvents: "none" }}>
+                <g
+                  ref={starsGroupRef}
+                  style={{ pointerEvents: "none" }}
+                >
+                  <g
+                    ref={smallStarRef}
+                    style={{ opacity: 0, transformOrigin: "center", pointerEvents: "none" }}
+                  >
+                    <g ref={smallStarShapeRef}>
+                      <path
+                        d={ROUNDED_STAR_PATH}
+                        fill={ORANGE}
+                        stroke="#FFFFFF"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                      />
+                    </g>
+                  </g>
+                  <g
+                    ref={bigStarRef}
+                    style={{ opacity: 0, transformOrigin: "center", pointerEvents: "none" }}
+                  >
+                    <g ref={bigStarShapeRef}>
+                      <path
+                        d={ROUNDED_STAR_PATH}
+                        fill={ORANGE}
+                        stroke="#FFFFFF"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                      />
+                    </g>
+                  </g>
+                </g>
+              </g>
             </svg>
           </div>
         </div>
@@ -924,7 +1168,7 @@ function ProductProcessDesktop() {
 
 function ProductProcessMobile() {
   return (
-    <section className="px-6 py-20 min-[900px]:hidden">
+    <section className="mt-[80px] px-6 py-20 min-[900px]:hidden">
       <div className="mx-auto max-w-[720px]">
         <h2
           className="m-0 text-[34px] font-bold leading-[1.08] tracking-[-0.045em] text-[#2E3445]"
