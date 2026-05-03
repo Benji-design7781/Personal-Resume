@@ -1,0 +1,112 @@
+.header {
+  position: fixed;
+  inset-inline: 0;
+  top: 24px;
+  z-index: 90;
+  background: transparent;
+  pointer-events: none;
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: clamp(24px, 4vw, 56px);
+  pointer-events: auto;
+}
+
+.logoLink {
+  display: flex;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logoImage {
+  display: block;
+  width: 128px;
+  height: auto;
+  max-height: 26px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.navWrap {
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.navFrame {
+  position: relative;
+  height: 37px;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.navRoot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: auto;
+  height: 37px;
+  overflow: visible;
+  filter: drop-shadow(0 8px 20px rgba(15, 23, 42, 0.08));
+}
+
+.navSvg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.shapePath {
+  fill: rgba(255, 255, 255, 0.96);
+}
+
+.glow {
+  mix-blend-mode: difference;
+}
+
+.navHitLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.navLink {
+  position: absolute;
+  top: 0;
+  height: 37px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navText {
+  transition: color 300ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+@media (max-width: 768px) {
+  .navFrame {
+    display: none;
+  }
+
+  .logoImage {
+    width: 144px;
+    max-height: 32px;
+  }
+}

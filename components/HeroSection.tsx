@@ -3,14 +3,6 @@
 import { CardBody, CardContainer, CardItem } from "@/components/ui/3d-card";
 import { type CSSProperties, useEffect, useState } from "react";
 
-const navItems = [
-  { label: "影响者", href: "#influencer" },
-  { label: "代码", href: "#code" },
-  { label: "游戏", href: "#game" },
-  { label: "音乐", href: "#music" },
-  { label: "图书", href: "#books" },
-];
-
 const identityLines = [
   "0-1架构搭建",
   "1-100迭代",
@@ -194,50 +186,6 @@ function OrbitIconImage({
       draggable={false}
       src={src}
     />
-  );
-}
-
-function TopNav() {
-  return (
-    <header className="fixed left-0 top-0 z-50 w-full border-b border-slate-300/10 bg-gradient-to-b from-slate-100/95 to-slate-100/0 px-4 py-4 backdrop-blur-[2px] lg:px-16 xl:px-32 2xl:px-44">
-      <div className="flex items-center justify-between">
-        <nav className="flex items-center justify-start gap-x-12 text-lg text-slate-700">
-          <a
-            className="hidden font-coda text-2xl font-normal lg:block"
-            href="#home"
-          >
-            Benji
-          </a>
-          <a
-            className="hidden items-center gap-x-1 lg:flex"
-            href="https://www.qzq.at/favorites"
-          >
-            <FavoriteIcon className="h-[1em] w-[1em]" />
-            收藏夹
-          </a>
-          {navItems.map((item) => (
-            <a className="hidden lg:block" href={item.href} key={item.href}>
-              {item.label}
-            </a>
-          ))}
-        </nav>
-
-        <div className="flex items-center justify-start gap-x-4 text-2xl text-slate-700">
-          <a aria-label="GitHub" href="https://github.com/SamuelQZQ">
-            <GitHubIcon className="h-7 w-7" />
-          </a>
-          <a aria-label="Twitter" href="https://twitter.com/SamuelQZQ">
-            <TwitterIcon className="h-7 w-7" />
-          </a>
-          <a aria-label="Bilibili" href="https://space.bilibili.com/">
-            <TvIcon className="h-7 w-7" />
-          </a>
-          <a aria-label="Instagram" href="https://www.instagram.com/">
-            <InstagramIcon className="h-7 w-7" />
-          </a>
-        </div>
-      </div>
-    </header>
   );
 }
 
@@ -561,7 +509,7 @@ function HeroContainer() {
         id="home"
         className="relative z-10 min-h-[850px] w-full select-none px-4 pt-[96px] lg:px-16 xl:px-32 2xl:px-44"
       >
-        <div className="relative h-[700px] w-full">
+        <div className="relative h-[700px] w-full -translate-y-[20px]">
           <OrbitBackground />
           <FloatingElements />
           <HeroCard />
@@ -572,11 +520,6 @@ function HeroContainer() {
 }
 
 export function HeroSection() {
-  return (
-    <>
-      <TopNav />
-      <HeroContainer />
-    </>
-  );
+  return <HeroContainer />;
 }
 
