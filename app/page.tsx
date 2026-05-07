@@ -1,6 +1,7 @@
 import { AbilityCardsTetrisStage } from "@/components/AbilityCardsTetrisStage";
 import { AbilityScenesIntroStage } from "@/components/AbilityScenesIntroStage";
 import { HeroSection } from "@/components/HeroSection";
+import { HeroToSecondTransitionZone } from "@/components/HeroToSecondTransitionZone";
 import { ProductProcessSection } from "@/components/ProductProcessSection";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -11,7 +12,7 @@ export default function Home() {
       <SmoothScrollProvider />
       <SiteHeader />
       <HeroSection />
-      <div aria-hidden="true" className="h-[100px] w-full bg-[#F3F3F7]" />
+      <HeroToSecondTransitionZone />
       <AbilityScenesIntroStage />
       <AbilityCardsTetrisStage />
       <ProductProcessSection />
