@@ -1,0 +1,66 @@
+.heroPosterText {
+  font-family: var(--font-gravitica-compressed), Impact, "Arial Narrow", sans-serif;
+  font-synthesis: none;
+}
+
+.heroSplitTitle {
+  display: block;
+  margin: 0;
+  user-select: none;
+  caret-color: transparent;
+  outline: none;
+}
+
+.heroPosterMetaText,
+.heroPosterYear,
+.heroPosterScroll {
+  font-family: "Noto Sans TC", "Noto Sans SC", sans-serif;
+}
+
+.heroVisualWrap {
+  position: absolute;
+  left: 619px;
+  top: 423px;
+  width: 514px;
+  height: 289px;
+  aspect-ratio: 514 / 289;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.heroVisualImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.heroTitleLetterWrapper {
+  position: relative;
+  display: inline-block;
+  vertical-align: baseline;
+  overflow: visible;
+  clip-path: inset(-0.24em 0 -0.24em 0);
+  cursor: default;
+}
+
+.heroTitleLetterCurrent,
+.heroTitleLetterNext {
+  display: block;
+  transform: translateX(0%);
+  will-change: transform;
+  pointer-events: none;
+}
+
+.heroTitleLetterNext {
+  position: absolute;
+  right: -100%;
+  top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroTitleLetterCurrent,
+  .heroTitleLetterNext {
+    will-change: auto;
+  }
+}

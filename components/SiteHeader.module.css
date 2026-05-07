@@ -1,7 +1,7 @@
 .header {
   position: fixed;
   inset-inline: 0;
-  top: 24px;
+  top: 16px;
   z-index: 90;
   background: transparent;
   pointer-events: none;
