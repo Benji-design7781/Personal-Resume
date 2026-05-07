@@ -1,4 +1,4 @@
-import { AbilityScenesSection } from "@/components/AbilityScenesSection";
+import { AbilityCardsTetrisStage } from "@/components/AbilityCardsTetrisStage";
 import { AbilityScenesIntroStage } from "@/components/AbilityScenesIntroStage";
 import { HeroSection } from "@/components/HeroSection";
 import { ProductProcessSection } from "@/components/ProductProcessSection";
@@ -13,7 +13,7 @@ export default function Home() {
       <HeroSection />
       <div aria-hidden="true" className="h-[100px] w-full bg-[#F3F3F7]" />
       <AbilityScenesIntroStage />
-      <AbilityScenesSection />
+      <AbilityCardsTetrisStage />
       <ProductProcessSection />
     </main>
   );
