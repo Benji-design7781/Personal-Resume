@@ -12,6 +12,11 @@ const FADE_DISTANCE = 16;
 const CAPTURE_CENTER_RATIO = 0.5;
 const HOLD_DISTANCE_RATIO = 0.35;
 const SCROLL_HINT_FADE_DISTANCE_RATIO = 0.18;
+const SPRING_STIFFNESS = 90;
+const SPRING_DAMPING = 14;
+const BACK_FACE_DESIGN_WIDTH = 1699;
+const BACK_FACE_DESIGN_HEIGHT = 794;
+const BACK_FACE_PREVIEW_ZOOM = 0.64;
 
 type PageRect = {
   left: number;
@@ -37,6 +42,16 @@ type DebugState = {
   holdStartY: number;
   holdDistance: number;
   holdProgress: number;
+  flipTriggerOffset: number;
+  flipTriggerY: number;
+  flipReverseY: number;
+  reverseBuffer: number;
+  flipProgress: number;
+  flipped: boolean;
+  targetRotation: number;
+  rotationY: number;
+  springVelocity: number;
+  cardVisibleOpacity: number;
   scrollHintFadeProgress: number;
   scrollDownOpacity: number;
   transitionZoneEndY: number;
@@ -48,6 +63,21 @@ type DebugState = {
   cloneTop: number;
   cloneCenterY: number;
   viewportCenterY: number;
+  designWidth: number;
+  designHeight: number;
+  cardWidth: number;
+  cardHeight: number;
+  cardAspect: number;
+  baseCropWidth: number;
+  baseCropHeight: number;
+  previewZoom: number;
+  previewCropWidth: number;
+  previewCropHeight: number;
+  previewCropX: number;
+  previewCropY: number;
+  cropScale: number;
+  typographyScale: number;
+  usesRealTypographyLayout: boolean;
 };
 
 const initialDebugState: DebugState = {
@@ -67,6 +97,16 @@ const initialDebugState: DebugState = {
   holdStartY: 0,
   holdDistance: 0,
   holdProgress: 0,
+  flipTriggerOffset: 0,
+  flipTriggerY: 0,
+  flipReverseY: 0,
+  reverseBuffer: 0,
+  flipProgress: 0,
+  flipped: false,
+  targetRotation: 0,
+  rotationY: 0,
+  springVelocity: 0,
+  cardVisibleOpacity: 0,
   scrollHintFadeProgress: 0,
   scrollDownOpacity: 1,
   transitionZoneEndY: 0,
@@ -78,6 +118,28 @@ const initialDebugState: DebugState = {
   cloneTop: 0,
   cloneCenterY: 0,
   viewportCenterY: 0,
+  designWidth: BACK_FACE_DESIGN_WIDTH,
+  designHeight: BACK_FACE_DESIGN_HEIGHT,
+  cardWidth: 514,
+  cardHeight: 289,
+  cardAspect: 514 / 289,
+  baseCropWidth: BACK_FACE_DESIGN_HEIGHT * (514 / 289),
+  baseCropHeight: BACK_FACE_DESIGN_HEIGHT,
+  previewZoom: BACK_FACE_PREVIEW_ZOOM,
+  previewCropWidth:
+    (BACK_FACE_DESIGN_HEIGHT * (514 / 289)) / BACK_FACE_PREVIEW_ZOOM,
+  previewCropHeight: BACK_FACE_DESIGN_HEIGHT / BACK_FACE_PREVIEW_ZOOM,
+  previewCropX:
+    BACK_FACE_DESIGN_WIDTH / 2 -
+    (BACK_FACE_DESIGN_HEIGHT * (514 / 289)) / BACK_FACE_PREVIEW_ZOOM / 2,
+  previewCropY:
+    BACK_FACE_DESIGN_HEIGHT / 2 -
+    BACK_FACE_DESIGN_HEIGHT / BACK_FACE_PREVIEW_ZOOM / 2,
+  cropScale:
+    514 /
+    ((BACK_FACE_DESIGN_HEIGHT * (514 / 289)) / BACK_FACE_PREVIEW_ZOOM),
+  typographyScale: 0.86,
+  usesRealTypographyLayout: true,
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -123,6 +185,43 @@ function measureSourceImage() {
   };
 }
 
+function computeBackFaceCrop(cardWidth: number, cardHeight: number) {
+  const designWidth = BACK_FACE_DESIGN_WIDTH;
+  const designHeight = BACK_FACE_DESIGN_HEIGHT;
+  const cardAspect = cardWidth / cardHeight;
+  const designAspect = designWidth / designHeight;
+
+  let baseCropWidth: number;
+  let baseCropHeight: number;
+
+  if (cardAspect <= designAspect) {
+    baseCropHeight = designHeight;
+    baseCropWidth = designHeight * cardAspect;
+  } else {
+    baseCropWidth = designWidth;
+    baseCropHeight = designWidth / cardAspect;
+  }
+
+  const previewZoom = BACK_FACE_PREVIEW_ZOOM;
+  const previewCropWidth = baseCropWidth / previewZoom;
+  const previewCropHeight = baseCropHeight / previewZoom;
+  const previewCropX = designWidth / 2 - previewCropWidth / 2;
+  const previewCropY = designHeight / 2 - previewCropHeight / 2;
+  const cropScale = cardWidth / previewCropWidth;
+
+  return {
+    cardAspect,
+    baseCropWidth,
+    baseCropHeight,
+    previewZoom,
+    previewCropWidth,
+    previewCropHeight,
+    previewCropX,
+    previewCropY,
+    cropScale,
+  };
+}
+
 export function HeroToSecondTransitionZone() {
   const transitionZoneRef = useRef<HTMLElement | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -131,6 +230,12 @@ export function HeroToSecondTransitionZone() {
   const abilityStageRef = useRef<HTMLElement | null>(null);
   const initialPageRectRef = useRef<PageRect | null>(null);
   const captureLockRef = useRef<{ left: number; top: number } | null>(null);
+  const rotationRef = useRef(0);
+  const velocityRef = useRef(0);
+  const targetRotationRef = useRef(0);
+  const flippedRef = useRef(false);
+  const springFrameRef = useRef<number | null>(null);
+  const lastSpringTimeRef = useRef<number | null>(null);
   const originalSourceOpacityRef = useRef("");
   const originalScrollHintStylesRef = useRef({
     opacity: "",
@@ -140,6 +245,68 @@ export function HeroToSecondTransitionZone() {
     useState<DebugState>(initialDebugState);
 
   useEffect(() => {
+    const runSpring = (now: number) => {
+      const lastTime = lastSpringTimeRef.current ?? now;
+      const dt = Math.min((now - lastTime) / 1000, 0.032);
+      lastSpringTimeRef.current = now;
+
+      const rotation = rotationRef.current;
+      const velocity = velocityRef.current;
+      const target = targetRotationRef.current;
+      const displacement = rotation - target;
+      const acceleration =
+        -SPRING_STIFFNESS * displacement - SPRING_DAMPING * velocity;
+      const nextVelocity = velocity + acceleration * dt;
+      let nextRotation = rotation + nextVelocity * dt;
+      let settledVelocity = nextVelocity;
+
+      if (
+        Math.abs(nextRotation - target) < 0.05 &&
+        Math.abs(nextVelocity) < 0.05
+      ) {
+        nextRotation = target;
+        settledVelocity = 0;
+      }
+
+      rotationRef.current = nextRotation;
+      velocityRef.current = settledVelocity;
+
+      setDebugState((currentState) => ({
+        ...currentState,
+        flipped: flippedRef.current,
+        flipProgress: flippedRef.current ? 1 : 0,
+        rotationY: nextRotation,
+        springVelocity: settledVelocity,
+        targetRotation: targetRotationRef.current,
+      }));
+
+      if (nextRotation === target && settledVelocity === 0) {
+        springFrameRef.current = null;
+        lastSpringTimeRef.current = null;
+        return;
+      }
+
+      springFrameRef.current = window.requestAnimationFrame(runSpring);
+    };
+
+    const startSpring = () => {
+      if (springFrameRef.current === null) {
+        lastSpringTimeRef.current = null;
+        springFrameRef.current = window.requestAnimationFrame(runSpring);
+      }
+    };
+
+    const setRotationTarget = (target: number, flipped: boolean) => {
+      const targetChanged = targetRotationRef.current !== target;
+
+      flippedRef.current = flipped;
+
+      if (targetChanged) {
+        targetRotationRef.current = target;
+        startSpring();
+      }
+    };
+
     const syncMeasurement = () => {
       abilityStageRef.current = document.querySelector<HTMLElement>(
         ABILITY_STAGE_SELECTOR,
@@ -214,6 +381,7 @@ export function HeroToSecondTransitionZone() {
         abilityStageRef.current?.getBoundingClientRect().top ?? 0;
 
       if (!initialPageRect) {
+        setRotationTarget(0, false);
         setDebugState({
           ...initialDebugState,
           scrollY,
@@ -238,6 +406,7 @@ export function HeroToSecondTransitionZone() {
 
       if (scrollY < captureScrollY) {
         captureLockRef.current = null;
+        setRotationTarget(0, false);
       } else if (!captureLockRef.current) {
         captureLockRef.current = {
           left: naturalLeft,
@@ -258,6 +427,17 @@ export function HeroToSecondTransitionZone() {
         0,
         1,
       );
+      const flipTriggerOffset = viewportHeight * 0.12;
+      const flipTriggerY = holdStartY + holdDistance + flipTriggerOffset;
+      const reverseBuffer = 48;
+      const flipReverseY = flipTriggerY - reverseBuffer;
+
+      if (!flippedRef.current && scrollY >= flipTriggerY) {
+        setRotationTarget(180, true);
+      } else if (flippedRef.current && scrollY <= flipReverseY) {
+        setRotationTarget(0, false);
+      }
+
       const scrollHintFadeProgress = clamp(
         (scrollY - captureScrollY) /
           Math.max(viewportHeight * SCROLL_HINT_FADE_DISTANCE_RATIO, 1),
@@ -267,6 +447,7 @@ export function HeroToSecondTransitionZone() {
       const sourceOpacity = 1 - fadeProgress;
       const baseCloneOpacity = fadeProgress;
       const cloneOpacity = overlayActive ? baseCloneOpacity : 0;
+      const cardVisibleOpacity = cloneOpacity;
       const scrollDownOpacity = 1 - scrollHintFadeProgress;
       const cloneLeft =
         scrollY < captureScrollY
@@ -277,6 +458,9 @@ export function HeroToSecondTransitionZone() {
           ? naturalTop
           : centerTop;
       const cloneCenterY = cloneTop + initialPageRect.height / 2;
+      const cardWidth = initialPageRect.width;
+      const cardHeight = initialPageRect.height;
+      const backFaceCrop = computeBackFaceCrop(cardWidth, cardHeight);
 
       if (sourceElementRef.current) {
         sourceElementRef.current.style.opacity =
@@ -316,6 +500,16 @@ export function HeroToSecondTransitionZone() {
         holdStartY,
         holdDistance,
         holdProgress,
+        flipTriggerOffset,
+        flipTriggerY,
+        flipReverseY,
+        reverseBuffer,
+        flipProgress: flippedRef.current ? 1 : 0,
+        flipped: flippedRef.current,
+        targetRotation: targetRotationRef.current,
+        rotationY: rotationRef.current,
+        springVelocity: velocityRef.current,
+        cardVisibleOpacity,
         scrollHintFadeProgress,
         scrollDownOpacity,
         transitionZoneEndY,
@@ -327,6 +521,21 @@ export function HeroToSecondTransitionZone() {
         cloneTop,
         cloneCenterY,
         viewportCenterY,
+        designWidth: BACK_FACE_DESIGN_WIDTH,
+        designHeight: BACK_FACE_DESIGN_HEIGHT,
+        cardWidth,
+        cardHeight,
+        cardAspect: backFaceCrop.cardAspect,
+        baseCropWidth: backFaceCrop.baseCropWidth,
+        baseCropHeight: backFaceCrop.baseCropHeight,
+        previewZoom: backFaceCrop.previewZoom,
+        previewCropWidth: backFaceCrop.previewCropWidth,
+        previewCropHeight: backFaceCrop.previewCropHeight,
+        previewCropX: backFaceCrop.previewCropX,
+        previewCropY: backFaceCrop.previewCropY,
+        cropScale: backFaceCrop.cropScale,
+        typographyScale: 0.86,
+        usesRealTypographyLayout: true,
       });
     };
 
@@ -358,6 +567,10 @@ export function HeroToSecondTransitionZone() {
         window.cancelAnimationFrame(frameRef.current);
       }
 
+      if (springFrameRef.current !== null) {
+        window.cancelAnimationFrame(springFrameRef.current);
+      }
+
       restoreInlineOpacity(
         sourceElementRef.current,
         originalSourceOpacityRef.current,
@@ -370,14 +583,20 @@ export function HeroToSecondTransitionZone() {
   }, []);
 
   const initialPageRect = debugState.initialPageRect;
-  const cloneStyle = initialPageRect
+  const cardOuterStyle = initialPageRect
     ? ({
         width: `${initialPageRect.width}px`,
         height: `${initialPageRect.height}px`,
-        opacity: debugState.cloneOpacity,
+        opacity: debugState.cardVisibleOpacity,
         transform: `translate3d(${debugState.cloneLeft}px, ${debugState.cloneTop}px, 0)`,
       } satisfies CSSProperties)
     : undefined;
+  const cardInnerStyle = {
+    transform: `rotateY(${debugState.rotationY}deg)`,
+  } satisfies CSSProperties;
+  const cardWidth = initialPageRect?.width ?? 514;
+  const cardHeight = initialPageRect?.height ?? 289;
+  const backFaceCrop = computeBackFaceCrop(cardWidth, cardHeight);
 
   return (
     <section
@@ -396,16 +615,200 @@ export function HeroToSecondTransitionZone() {
       <div className="pointer-events-none fixed inset-0 z-[80]">
         {initialPageRect ? (
           <div
-            className="fixed left-0 top-0 overflow-hidden will-change-transform"
-            data-transition-role="hero-image-clone"
-            style={cloneStyle}
+            className="fixed left-0 top-0 will-change-transform"
+            data-transition-role="hero-image-card"
+            style={cardOuterStyle}
           >
-            <img
-              alt=""
-              className="block h-full w-full object-cover"
-              draggable={false}
-              src={HERO_VISUAL_SRC}
-            />
+            <div
+              className="h-full w-full"
+              style={{ perspective: "1200px" }}
+            >
+              <div
+                className="relative h-full w-full will-change-transform"
+                style={{
+                  ...cardInnerStyle,
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                <div
+                  className="absolute inset-0 h-full w-full overflow-hidden"
+                  data-transition-role="hero-image-card-front"
+                  style={{
+                    backfaceVisibility: "hidden",
+                    transform: "rotateY(0deg)",
+                    WebkitBackfaceVisibility: "hidden",
+                  }}
+                >
+                  <img
+                    alt=""
+                    className="block h-full w-full object-cover"
+                    draggable={false}
+                    src={HERO_VISUAL_SRC}
+                  />
+                </div>
+                <div
+                  className="absolute inset-0 h-full w-full overflow-hidden"
+                  data-transition-role="hero-image-card-back"
+                  style={{
+                    backfaceVisibility: "hidden",
+                    background: "#DA9767",
+                    transform: "rotateY(180deg)",
+                    WebkitBackfaceVisibility: "hidden",
+                  }}
+                >
+                  <div
+                    className="absolute inset-0 overflow-hidden"
+                    data-transition-role="hero-image-card-back-static-typography"
+                    style={{ pointerEvents: "none" }}
+                  >
+                    <div
+                      style={{
+                        height: `${BACK_FACE_DESIGN_HEIGHT}px`,
+                        left: `${-backFaceCrop.previewCropX * backFaceCrop.cropScale}px`,
+                        overflow: "visible",
+                        position: "absolute",
+                        top: `${-backFaceCrop.previewCropY * backFaceCrop.cropScale}px`,
+                        transform: `scale(${backFaceCrop.cropScale})`,
+                        transformOrigin: "top left",
+                        width: `${BACK_FACE_DESIGN_WIDTH}px`,
+                        background: "#DA9767",
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: `${BACK_FACE_DESIGN_HEIGHT}px`,
+                          overflow: "visible",
+                          position: "relative",
+                          width: `${BACK_FACE_DESIGN_WIDTH}px`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            inset: 0,
+                            position: "absolute",
+                            transform: "scale(0.86)",
+                            transformOrigin: "50% 52.3%",
+                          }}
+                        >
+                          <div
+                            style={{
+                              height: "240px",
+                              left: "565px",
+                              position: "absolute",
+                              top: "85px",
+                              width: "417px",
+                            }}
+                          >
+                            <img
+                              alt=""
+                              aria-hidden="true"
+                              draggable={false}
+                              src="/assets/ability-intro/ability.svg"
+                              style={{
+                                display: "block",
+                                height: "100%",
+                                objectFit: "contain",
+                                width: "100%",
+                              }}
+                            />
+                          </div>
+                          <div
+                            style={{
+                              height: "230px",
+                              left: "555px",
+                              position: "absolute",
+                              top: "305px",
+                              width: "582px",
+                            }}
+                          >
+                            <img
+                              alt=""
+                              aria-hidden="true"
+                              draggable={false}
+                              src="/assets/ability-intro/happen-in.svg"
+                              style={{
+                                display: "block",
+                                height: "100%",
+                                objectFit: "contain",
+                                width: "100%",
+                              }}
+                            />
+                          </div>
+                          <div
+                            style={{
+                              height: "230px",
+                              left: "555px",
+                              position: "absolute",
+                              top: "515px",
+                              width: "582px",
+                            }}
+                          >
+                            <img
+                              alt=""
+                              aria-hidden="true"
+                              draggable={false}
+                              src="/assets/ability-intro/scenes.svg"
+                              style={{
+                                display: "block",
+                                height: "100%",
+                                objectFit: "contain",
+                                width: "100%",
+                              }}
+                            />
+                          </div>
+                          <div
+                            style={{
+                              color: "#FFFFFF",
+                              fontFamily:
+                                'Inter, "Helvetica Neue", Arial, sans-serif',
+                              fontSize: "18px",
+                              fontWeight: 700,
+                              left: "317px",
+                              lineHeight: "24px",
+                              position: "absolute",
+                              textTransform: "uppercase",
+                              top: "240px",
+                              whiteSpace: "nowrap",
+                              width: "215px",
+                            }}
+                          >
+                            <span style={{ display: "block" }}>
+                              NOT PROJECT LISTS
+                            </span>
+                            <span style={{ display: "block" }}>
+                              BUT CAPABILITY SLICES
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              color: "#FFFFFF",
+                              fontFamily:
+                                'Inter, "Helvetica Neue", Arial, sans-serif',
+                              fontSize: "18px",
+                              fontWeight: 700,
+                              left: "1167px",
+                              lineHeight: "24px",
+                              position: "absolute",
+                              textTransform: "uppercase",
+                              top: "454px",
+                              whiteSpace: "nowrap",
+                              width: "215px",
+                            }}
+                          >
+                            <span style={{ display: "block" }}>
+                              COMPLEX SCENES
+                            </span>
+                            <span style={{ display: "block" }}>
+                              CLEAR SYSTEMS
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         ) : null}
 
@@ -451,6 +854,46 @@ function DebugPanel({ state }: { state: DebugState }) {
       <div>holdStartY: {state.holdStartY.toFixed(1)}</div>
       <div>holdDistance: {state.holdDistance.toFixed(1)}</div>
       <div>holdProgress: {state.holdProgress.toFixed(3)}</div>
+      <div>flip offset: {state.flipTriggerOffset.toFixed(1)}</div>
+      <div>flipTriggerY: {state.flipTriggerY.toFixed(1)}</div>
+      <div>flipReverseY: {state.flipReverseY.toFixed(1)}</div>
+      <div>reverse buffer: {state.reverseBuffer.toFixed(1)}</div>
+      <div>flipped: {state.flipped ? "true" : "false"}</div>
+      <div>targetRotation: {state.targetRotation.toFixed(1)}</div>
+      <div>flipProgress debug: {state.flipProgress.toFixed(3)}</div>
+      <div>rotationY: {state.rotationY.toFixed(1)}</div>
+      <div>spring velocity: {state.springVelocity.toFixed(2)}</div>
+      <div>rotation source: spring</div>
+      <div>back face: static typography</div>
+      <div>
+        real layout: {state.usesRealTypographyLayout ? "true" : "false"}
+      </div>
+      <div>typographyScale: {state.typographyScale.toFixed(2)}</div>
+      <div>
+        design: {state.designWidth.toFixed(0)} x{" "}
+        {state.designHeight.toFixed(0)}
+      </div>
+      <div>
+        card: {state.cardWidth.toFixed(1)} x {state.cardHeight.toFixed(1)}
+      </div>
+      <div>cardAspect: {state.cardAspect.toFixed(3)}</div>
+      <div>
+        baseCrop: {state.baseCropWidth.toFixed(1)} x{" "}
+        {state.baseCropHeight.toFixed(1)}
+      </div>
+      <div>
+        previewZoom: {state.previewZoom.toFixed(2)}
+      </div>
+      <div>
+        previewCrop: {state.previewCropWidth.toFixed(1)} x{" "}
+        {state.previewCropHeight.toFixed(1)}
+      </div>
+      <div>
+        preview origin: {state.previewCropX.toFixed(1)} /{" "}
+        {state.previewCropY.toFixed(1)}
+      </div>
+      <div>cropScale: {state.cropScale.toFixed(3)}</div>
+      <div>card opacity: {state.cardVisibleOpacity.toFixed(3)}</div>
       <div>
         scroll hint fade: {state.scrollHintFadeProgress.toFixed(3)}
       </div>
