@@ -11,12 +11,25 @@ const HERO_VISUAL_SRC = "/assets/hero/hero-center-visual.jpg";
 const FADE_DISTANCE = 16;
 const CAPTURE_CENTER_RATIO = 0.5;
 const HOLD_DISTANCE_RATIO = 0.35;
-const SCROLL_HINT_FADE_DISTANCE_RATIO = 0.18;
-const SPRING_STIFFNESS = 90;
-const SPRING_DAMPING = 14;
-const BACK_FACE_DESIGN_WIDTH = 1699;
-const BACK_FACE_DESIGN_HEIGHT = 794;
-const BACK_FACE_PREVIEW_ZOOM = 0.64;
+const SCROLL_HINT_FADE_START_Y = 0;
+const SCROLL_HINT_FADE_DISTANCE = 110;
+const FLIP_TO_BACK_ANTICIPATION_MS = 140;
+const FLIP_TO_BACK_MAIN_MS = 760;
+const FLIP_TO_BACK_SETTLE_MS = 280;
+const FLIP_TO_FRONT_ANTICIPATION_MS = 130;
+const FLIP_TO_FRONT_MAIN_MS = 740;
+const FLIP_TO_FRONT_SETTLE_MS = 260;
+const EXPAND_DURATION_MS = 560;
+const SHRINK_DURATION_MS = 400;
+
+type TransitionPhase =
+  | "front"
+  | "flippingToBack"
+  | "back"
+  | "expanding"
+  | "expanded"
+  | "shrinking"
+  | "flippingToFront";
 
 type PageRect = {
   left: number;
@@ -42,16 +55,31 @@ type DebugState = {
   holdStartY: number;
   holdDistance: number;
   holdProgress: number;
+  phase: TransitionPhase;
+  baseFlipTriggerY: number;
+  flipTriggerAdvance: number;
   flipTriggerOffset: number;
   flipTriggerY: number;
   flipReverseY: number;
   reverseBuffer: number;
-  flipProgress: number;
   flipped: boolean;
   targetRotation: number;
   rotationY: number;
-  springVelocity: number;
+  visualRotationY: number;
+  expandTriggerY: number;
+  expandReverseY: number;
+  pendingExpand: boolean;
+  expanded: boolean;
+  targetExpand: number;
+  expandValue: number;
+  visualExpand: number;
+  flipTimelineActive: boolean;
+  expandTimelineActive: boolean;
   cardVisibleOpacity: number;
+  cardLeft: number;
+  cardTop: number;
+  cardWidth: number;
+  cardHeight: number;
   scrollHintFadeProgress: number;
   scrollDownOpacity: number;
   transitionZoneEndY: number;
@@ -63,21 +91,6 @@ type DebugState = {
   cloneTop: number;
   cloneCenterY: number;
   viewportCenterY: number;
-  designWidth: number;
-  designHeight: number;
-  cardWidth: number;
-  cardHeight: number;
-  cardAspect: number;
-  baseCropWidth: number;
-  baseCropHeight: number;
-  previewZoom: number;
-  previewCropWidth: number;
-  previewCropHeight: number;
-  previewCropX: number;
-  previewCropY: number;
-  cropScale: number;
-  typographyScale: number;
-  usesRealTypographyLayout: boolean;
 };
 
 const initialDebugState: DebugState = {
@@ -97,16 +110,31 @@ const initialDebugState: DebugState = {
   holdStartY: 0,
   holdDistance: 0,
   holdProgress: 0,
+  phase: "front",
+  baseFlipTriggerY: 0,
+  flipTriggerAdvance: 0,
   flipTriggerOffset: 0,
   flipTriggerY: 0,
   flipReverseY: 0,
   reverseBuffer: 0,
-  flipProgress: 0,
   flipped: false,
   targetRotation: 0,
   rotationY: 0,
-  springVelocity: 0,
+  visualRotationY: 0,
+  expandTriggerY: 0,
+  expandReverseY: 0,
+  pendingExpand: false,
+  expanded: false,
+  targetExpand: 0,
+  expandValue: 0,
+  visualExpand: 0,
+  flipTimelineActive: false,
+  expandTimelineActive: false,
   cardVisibleOpacity: 0,
+  cardLeft: 0,
+  cardTop: 0,
+  cardWidth: 0,
+  cardHeight: 0,
   scrollHintFadeProgress: 0,
   scrollDownOpacity: 1,
   transitionZoneEndY: 0,
@@ -118,32 +146,28 @@ const initialDebugState: DebugState = {
   cloneTop: 0,
   cloneCenterY: 0,
   viewportCenterY: 0,
-  designWidth: BACK_FACE_DESIGN_WIDTH,
-  designHeight: BACK_FACE_DESIGN_HEIGHT,
-  cardWidth: 514,
-  cardHeight: 289,
-  cardAspect: 514 / 289,
-  baseCropWidth: BACK_FACE_DESIGN_HEIGHT * (514 / 289),
-  baseCropHeight: BACK_FACE_DESIGN_HEIGHT,
-  previewZoom: BACK_FACE_PREVIEW_ZOOM,
-  previewCropWidth:
-    (BACK_FACE_DESIGN_HEIGHT * (514 / 289)) / BACK_FACE_PREVIEW_ZOOM,
-  previewCropHeight: BACK_FACE_DESIGN_HEIGHT / BACK_FACE_PREVIEW_ZOOM,
-  previewCropX:
-    BACK_FACE_DESIGN_WIDTH / 2 -
-    (BACK_FACE_DESIGN_HEIGHT * (514 / 289)) / BACK_FACE_PREVIEW_ZOOM / 2,
-  previewCropY:
-    BACK_FACE_DESIGN_HEIGHT / 2 -
-    BACK_FACE_DESIGN_HEIGHT / BACK_FACE_PREVIEW_ZOOM / 2,
-  cropScale:
-    514 /
-    ((BACK_FACE_DESIGN_HEIGHT * (514 / 289)) / BACK_FACE_PREVIEW_ZOOM),
-  typographyScale: 0.86,
-  usesRealTypographyLayout: true,
 };
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function lerp(start: number, end: number, progress: number) {
+  return start + (end - start) * progress;
+}
+
+function easeOutCubic(value: number) {
+  return 1 - Math.pow(1 - value, 3);
+}
+
+function easeInOutCubic(value: number) {
+  return value < 0.5
+    ? 4 * value * value * value
+    : 1 - Math.pow(-2 * value + 2, 3) / 2;
+}
+
+function easeOutQuart(value: number) {
+  return 1 - Math.pow(1 - value, 4);
 }
 
 function restoreInlineOpacity(
@@ -185,40 +209,35 @@ function measureSourceImage() {
   };
 }
 
-function computeBackFaceCrop(cardWidth: number, cardHeight: number) {
-  const designWidth = BACK_FACE_DESIGN_WIDTH;
-  const designHeight = BACK_FACE_DESIGN_HEIGHT;
-  const cardAspect = cardWidth / cardHeight;
-  const designAspect = designWidth / designHeight;
-
-  let baseCropWidth: number;
-  let baseCropHeight: number;
-
-  if (cardAspect <= designAspect) {
-    baseCropHeight = designHeight;
-    baseCropWidth = designHeight * cardAspect;
-  } else {
-    baseCropWidth = designWidth;
-    baseCropHeight = designWidth / cardAspect;
+function computeCardLayout(
+  expandValue: number,
+  initialPageRect: PageRect | null,
+  captureLeft: number | null,
+  centerTop: number,
+) {
+  if (!initialPageRect) {
+    return {
+      cardLeft: 0,
+      cardTop: 0,
+      cardWidth: 0,
+      cardHeight: 0,
+    };
   }
 
-  const previewZoom = BACK_FACE_PREVIEW_ZOOM;
-  const previewCropWidth = baseCropWidth / previewZoom;
-  const previewCropHeight = baseCropHeight / previewZoom;
-  const previewCropX = designWidth / 2 - previewCropWidth / 2;
-  const previewCropY = designHeight / 2 - previewCropHeight / 2;
-  const cropScale = cardWidth / previewCropWidth;
+  const startLeft = captureLeft ?? initialPageRect.left - window.scrollX;
+  const startTop = centerTop;
+  const startWidth = initialPageRect.width;
+  const startHeight = initialPageRect.height;
+  const targetLeft = 0;
+  const targetTop = 0;
+  const targetWidth = window.innerWidth;
+  const targetHeight = window.innerHeight;
 
   return {
-    cardAspect,
-    baseCropWidth,
-    baseCropHeight,
-    previewZoom,
-    previewCropWidth,
-    previewCropHeight,
-    previewCropX,
-    previewCropY,
-    cropScale,
+    cardLeft: lerp(startLeft, targetLeft, expandValue),
+    cardTop: lerp(startTop, targetTop, expandValue),
+    cardWidth: lerp(startWidth, targetWidth, expandValue),
+    cardHeight: lerp(startHeight, targetHeight, expandValue),
   };
 }
 
@@ -231,11 +250,17 @@ export function HeroToSecondTransitionZone() {
   const initialPageRectRef = useRef<PageRect | null>(null);
   const captureLockRef = useRef<{ left: number; top: number } | null>(null);
   const rotationRef = useRef(0);
-  const velocityRef = useRef(0);
   const targetRotationRef = useRef(0);
-  const flippedRef = useRef(false);
-  const springFrameRef = useRef<number | null>(null);
-  const lastSpringTimeRef = useRef<number | null>(null);
+  const phaseRef = useRef<TransitionPhase>("front");
+  const pendingExpandRef = useRef(false);
+  const expandValueRef = useRef(0);
+  const targetExpandRef = useRef(0);
+  const flipRafRef = useRef<number | null>(null);
+  const expandRafRef = useRef<number | null>(null);
+  const latestScrollYRef = useRef(0);
+  const latestFlipTriggerYRef = useRef(0);
+  const latestFlipReverseYRef = useRef(0);
+  const latestCaptureScrollYRef = useRef(0);
   const originalSourceOpacityRef = useRef("");
   const originalScrollHintStylesRef = useRef({
     opacity: "",
@@ -245,66 +270,188 @@ export function HeroToSecondTransitionZone() {
     useState<DebugState>(initialDebugState);
 
   useEffect(() => {
-    const runSpring = (now: number) => {
-      const lastTime = lastSpringTimeRef.current ?? now;
-      const dt = Math.min((now - lastTime) / 1000, 0.032);
-      lastSpringTimeRef.current = now;
+    const syncAnimationDebugState = () => {
+      setDebugState((currentState) => {
+        const visualRotationY = clamp(rotationRef.current, -8, 188);
+        const visualExpand = clamp(expandValueRef.current, 0, 1);
+        const layout = computeCardLayout(
+          visualExpand,
+          currentState.initialPageRect,
+          currentState.captureLeft,
+          currentState.centerTop,
+        );
+        const phase = phaseRef.current;
 
-      const rotation = rotationRef.current;
-      const velocity = velocityRef.current;
-      const target = targetRotationRef.current;
-      const displacement = rotation - target;
-      const acceleration =
-        -SPRING_STIFFNESS * displacement - SPRING_DAMPING * velocity;
-      const nextVelocity = velocity + acceleration * dt;
-      let nextRotation = rotation + nextVelocity * dt;
-      let settledVelocity = nextVelocity;
-
-      if (
-        Math.abs(nextRotation - target) < 0.05 &&
-        Math.abs(nextVelocity) < 0.05
-      ) {
-        nextRotation = target;
-        settledVelocity = 0;
-      }
-
-      rotationRef.current = nextRotation;
-      velocityRef.current = settledVelocity;
-
-      setDebugState((currentState) => ({
-        ...currentState,
-        flipped: flippedRef.current,
-        flipProgress: flippedRef.current ? 1 : 0,
-        rotationY: nextRotation,
-        springVelocity: settledVelocity,
-        targetRotation: targetRotationRef.current,
-      }));
-
-      if (nextRotation === target && settledVelocity === 0) {
-        springFrameRef.current = null;
-        lastSpringTimeRef.current = null;
-        return;
-      }
-
-      springFrameRef.current = window.requestAnimationFrame(runSpring);
+        return {
+          ...currentState,
+          phase,
+          flipped: phase !== "front",
+          targetRotation: targetRotationRef.current,
+          rotationY: rotationRef.current,
+          visualRotationY,
+          targetExpand: targetExpandRef.current,
+          expandValue: expandValueRef.current,
+          visualExpand,
+          pendingExpand: pendingExpandRef.current,
+          expanded: phase === "expanding" || phase === "expanded",
+          flipTimelineActive: flipRafRef.current !== null,
+          expandTimelineActive: expandRafRef.current !== null,
+          cardLeft: layout.cardLeft,
+          cardTop: layout.cardTop,
+          cardWidth: layout.cardWidth,
+          cardHeight: layout.cardHeight,
+        };
+      });
     };
 
-    const startSpring = () => {
-      if (springFrameRef.current === null) {
-        lastSpringTimeRef.current = null;
-        springFrameRef.current = window.requestAnimationFrame(runSpring);
+    const cancelFlipTimeline = () => {
+      if (flipRafRef.current !== null) {
+        window.cancelAnimationFrame(flipRafRef.current);
+        flipRafRef.current = null;
       }
     };
 
-    const setRotationTarget = (target: number, flipped: boolean) => {
-      const targetChanged = targetRotationRef.current !== target;
-
-      flippedRef.current = flipped;
-
-      if (targetChanged) {
-        targetRotationRef.current = target;
-        startSpring();
+    const cancelExpandTimeline = () => {
+      if (expandRafRef.current !== null) {
+        window.cancelAnimationFrame(expandRafRef.current);
+        expandRafRef.current = null;
       }
+    };
+
+    const startExpandTimeline = (target: 0 | 1) => {
+      cancelExpandTimeline();
+
+      const from = expandValueRef.current;
+      const duration =
+        target === 1 ? EXPAND_DURATION_MS : SHRINK_DURATION_MS;
+      const easing = easeInOutCubic;
+
+      targetExpandRef.current = target;
+      phaseRef.current = target === 1 ? "expanding" : "shrinking";
+      syncAnimationDebugState();
+
+      let startTime: number | null = null;
+
+      const step = (now: number) => {
+        if (startTime === null) {
+          startTime = now;
+        }
+
+        const progress = clamp((now - startTime) / duration, 0, 1);
+        expandValueRef.current = lerp(from, target, easing(progress));
+        syncAnimationDebugState();
+
+        if (progress < 1) {
+          expandRafRef.current = window.requestAnimationFrame(step);
+          return;
+        }
+
+        expandValueRef.current = target;
+        expandRafRef.current = null;
+
+        if (target === 1) {
+          phaseRef.current = "expanded";
+          syncAnimationDebugState();
+          return;
+        }
+
+        phaseRef.current = "back";
+        syncAnimationDebugState();
+
+        if (
+          latestScrollYRef.current <= latestFlipReverseYRef.current ||
+          latestScrollYRef.current < latestCaptureScrollYRef.current
+        ) {
+          startFlipTimeline("toFront");
+        }
+      };
+
+      expandRafRef.current = window.requestAnimationFrame(step);
+    };
+
+    const startFlipTimeline = (direction: "toBack" | "toFront") => {
+      cancelFlipTimeline();
+
+      const segments =
+        direction === "toBack"
+          ? [
+              { to: -10, duration: FLIP_TO_BACK_ANTICIPATION_MS, easing: easeOutCubic },
+              { to: 194, duration: FLIP_TO_BACK_MAIN_MS, easing: easeInOutCubic },
+              { to: 180, duration: FLIP_TO_BACK_SETTLE_MS, easing: easeOutCubic },
+            ]
+          : [
+              { to: 190, duration: FLIP_TO_FRONT_ANTICIPATION_MS, easing: easeOutCubic },
+              { to: -10, duration: FLIP_TO_FRONT_MAIN_MS, easing: easeInOutCubic },
+              { to: 0, duration: FLIP_TO_FRONT_SETTLE_MS, easing: easeOutCubic },
+            ];
+
+      targetRotationRef.current = direction === "toBack" ? 180 : 0;
+      phaseRef.current =
+        direction === "toBack" ? "flippingToBack" : "flippingToFront";
+      syncAnimationDebugState();
+
+      let segmentIndex = 0;
+      let segmentFrom = rotationRef.current;
+      let segmentStart: number | null = null;
+
+      const step = (now: number) => {
+        if (segmentStart === null) {
+          segmentStart = now;
+        }
+
+        const segment = segments[segmentIndex];
+        const progress = clamp(
+          (now - segmentStart) / segment.duration,
+          0,
+          1,
+        );
+
+        rotationRef.current = lerp(
+          segmentFrom,
+          segment.to,
+          segment.easing(progress),
+        );
+
+        syncAnimationDebugState();
+
+        if (progress < 1) {
+          flipRafRef.current = window.requestAnimationFrame(step);
+          return;
+        }
+
+        rotationRef.current = segment.to;
+
+        if (segmentIndex < segments.length - 1) {
+          segmentIndex += 1;
+          segmentFrom = segment.to;
+          segmentStart = now;
+          flipRafRef.current = window.requestAnimationFrame(step);
+          return;
+        }
+
+        flipRafRef.current = null;
+
+        if (direction === "toBack") {
+          phaseRef.current = "back";
+          syncAnimationDebugState();
+
+          if (
+            pendingExpandRef.current &&
+            latestScrollYRef.current >= latestFlipTriggerYRef.current
+          ) {
+            pendingExpandRef.current = false;
+            startExpandTimeline(1);
+          }
+
+          return;
+        }
+
+        phaseRef.current = "front";
+        pendingExpandRef.current = false;
+        syncAnimationDebugState();
+      };
+
+      flipRafRef.current = window.requestAnimationFrame(step);
     };
 
     const syncMeasurement = () => {
@@ -381,7 +528,14 @@ export function HeroToSecondTransitionZone() {
         abilityStageRef.current?.getBoundingClientRect().top ?? 0;
 
       if (!initialPageRect) {
-        setRotationTarget(0, false);
+        cancelFlipTimeline();
+        cancelExpandTimeline();
+        phaseRef.current = "front";
+        pendingExpandRef.current = false;
+        rotationRef.current = 0;
+        targetRotationRef.current = 0;
+        expandValueRef.current = 0;
+        targetExpandRef.current = 0;
         setDebugState({
           ...initialDebugState,
           scrollY,
@@ -406,7 +560,6 @@ export function HeroToSecondTransitionZone() {
 
       if (scrollY < captureScrollY) {
         captureLockRef.current = null;
-        setRotationTarget(0, false);
       } else if (!captureLockRef.current) {
         captureLockRef.current = {
           left: naturalLeft,
@@ -428,19 +581,62 @@ export function HeroToSecondTransitionZone() {
         1,
       );
       const flipTriggerOffset = viewportHeight * 0.12;
-      const flipTriggerY = holdStartY + holdDistance + flipTriggerOffset;
+      const baseFlipTriggerY = holdStartY + holdDistance + flipTriggerOffset;
+      const flipTriggerAdvance = Math.min(
+        Math.max(window.innerHeight * 0.18, 140),
+        220,
+      );
+      const flipTriggerY = baseFlipTriggerY - flipTriggerAdvance;
       const reverseBuffer = 48;
       const flipReverseY = flipTriggerY - reverseBuffer;
+      const expandTriggerY = flipTriggerY;
+      const expandReverseY = flipReverseY;
 
-      if (!flippedRef.current && scrollY >= flipTriggerY) {
-        setRotationTarget(180, true);
-      } else if (flippedRef.current && scrollY <= flipReverseY) {
-        setRotationTarget(0, false);
+      latestScrollYRef.current = scrollY;
+      latestFlipTriggerYRef.current = flipTriggerY;
+      latestFlipReverseYRef.current = flipReverseY;
+      latestCaptureScrollYRef.current = captureScrollY;
+
+      if (scrollY >= flipTriggerY) {
+        if (phaseRef.current === "front") {
+          pendingExpandRef.current = true;
+          startFlipTimeline("toBack");
+        } else if (phaseRef.current === "flippingToFront") {
+          pendingExpandRef.current = true;
+          startFlipTimeline("toBack");
+        } else if (phaseRef.current === "back") {
+          pendingExpandRef.current = false;
+          startExpandTimeline(1);
+        } else if (phaseRef.current === "shrinking") {
+          startExpandTimeline(1);
+        } else if (
+          (phaseRef.current === "flippingToBack" ||
+            phaseRef.current === "expanding" ||
+            phaseRef.current === "expanded") &&
+          !pendingExpandRef.current
+        ) {
+          pendingExpandRef.current = true;
+        }
+      }
+
+      if (scrollY <= flipReverseY || scrollY < captureScrollY) {
+        pendingExpandRef.current = false;
+
+        if (
+          phaseRef.current === "expanded" ||
+          phaseRef.current === "expanding"
+        ) {
+          startExpandTimeline(0);
+        } else if (phaseRef.current === "back") {
+          startFlipTimeline("toFront");
+        } else if (phaseRef.current === "flippingToBack") {
+          startFlipTimeline("toFront");
+        }
       }
 
       const scrollHintFadeProgress = clamp(
-        (scrollY - captureScrollY) /
-          Math.max(viewportHeight * SCROLL_HINT_FADE_DISTANCE_RATIO, 1),
+        (scrollY - SCROLL_HINT_FADE_START_Y) /
+          Math.max(SCROLL_HINT_FADE_DISTANCE, 1),
         0,
         1,
       );
@@ -458,9 +654,13 @@ export function HeroToSecondTransitionZone() {
           ? naturalTop
           : centerTop;
       const cloneCenterY = cloneTop + initialPageRect.height / 2;
-      const cardWidth = initialPageRect.width;
-      const cardHeight = initialPageRect.height;
-      const backFaceCrop = computeBackFaceCrop(cardWidth, cardHeight);
+      const visualExpand = clamp(expandValueRef.current, 0, 1);
+      const layout = computeCardLayout(
+        visualExpand,
+        initialPageRect,
+        captureLock?.left ?? null,
+        centerTop,
+      );
 
       if (sourceElementRef.current) {
         sourceElementRef.current.style.opacity =
@@ -500,16 +700,32 @@ export function HeroToSecondTransitionZone() {
         holdStartY,
         holdDistance,
         holdProgress,
+        phase: phaseRef.current,
+        baseFlipTriggerY,
+        flipTriggerAdvance,
         flipTriggerOffset,
         flipTriggerY,
         flipReverseY,
         reverseBuffer,
-        flipProgress: flippedRef.current ? 1 : 0,
-        flipped: flippedRef.current,
+        flipped: phaseRef.current !== "front",
         targetRotation: targetRotationRef.current,
         rotationY: rotationRef.current,
-        springVelocity: velocityRef.current,
+        visualRotationY: clamp(rotationRef.current, -8, 188),
+        expandTriggerY,
+        expandReverseY,
+        pendingExpand: pendingExpandRef.current,
+        expanded:
+          phaseRef.current === "expanding" || phaseRef.current === "expanded",
+        targetExpand: targetExpandRef.current,
+        expandValue: expandValueRef.current,
+        visualExpand,
+        flipTimelineActive: flipRafRef.current !== null,
+        expandTimelineActive: expandRafRef.current !== null,
         cardVisibleOpacity,
+        cardLeft: layout.cardLeft,
+        cardTop: layout.cardTop,
+        cardWidth: layout.cardWidth,
+        cardHeight: layout.cardHeight,
         scrollHintFadeProgress,
         scrollDownOpacity,
         transitionZoneEndY,
@@ -521,21 +737,6 @@ export function HeroToSecondTransitionZone() {
         cloneTop,
         cloneCenterY,
         viewportCenterY,
-        designWidth: BACK_FACE_DESIGN_WIDTH,
-        designHeight: BACK_FACE_DESIGN_HEIGHT,
-        cardWidth,
-        cardHeight,
-        cardAspect: backFaceCrop.cardAspect,
-        baseCropWidth: backFaceCrop.baseCropWidth,
-        baseCropHeight: backFaceCrop.baseCropHeight,
-        previewZoom: backFaceCrop.previewZoom,
-        previewCropWidth: backFaceCrop.previewCropWidth,
-        previewCropHeight: backFaceCrop.previewCropHeight,
-        previewCropX: backFaceCrop.previewCropX,
-        previewCropY: backFaceCrop.previewCropY,
-        cropScale: backFaceCrop.cropScale,
-        typographyScale: 0.86,
-        usesRealTypographyLayout: true,
       });
     };
 
@@ -567,8 +768,12 @@ export function HeroToSecondTransitionZone() {
         window.cancelAnimationFrame(frameRef.current);
       }
 
-      if (springFrameRef.current !== null) {
-        window.cancelAnimationFrame(springFrameRef.current);
+      if (flipRafRef.current !== null) {
+        window.cancelAnimationFrame(flipRafRef.current);
+      }
+
+      if (expandRafRef.current !== null) {
+        window.cancelAnimationFrame(expandRafRef.current);
       }
 
       restoreInlineOpacity(
@@ -585,18 +790,17 @@ export function HeroToSecondTransitionZone() {
   const initialPageRect = debugState.initialPageRect;
   const cardOuterStyle = initialPageRect
     ? ({
-        width: `${initialPageRect.width}px`,
-        height: `${initialPageRect.height}px`,
+        height: `${debugState.cardHeight}px`,
+        width: `${debugState.cardWidth}px`,
         opacity: debugState.cardVisibleOpacity,
-        transform: `translate3d(${debugState.cloneLeft}px, ${debugState.cloneTop}px, 0)`,
+        transform: `translate3d(${debugState.cardLeft}px, ${debugState.cardTop}px, 0)`,
+        borderRadius: "0px",
+        overflow: "hidden",
       } satisfies CSSProperties)
     : undefined;
   const cardInnerStyle = {
-    transform: `rotateY(${debugState.rotationY}deg)`,
+    transform: `rotateY(${debugState.visualRotationY}deg)`,
   } satisfies CSSProperties;
-  const cardWidth = initialPageRect?.width ?? 514;
-  const cardHeight = initialPageRect?.height ?? 289;
-  const backFaceCrop = computeBackFaceCrop(cardWidth, cardHeight);
 
   return (
     <section
@@ -621,23 +825,30 @@ export function HeroToSecondTransitionZone() {
           >
             <div
               className="h-full w-full"
-              style={{ perspective: "1200px" }}
+              style={{
+                perspective: "8000px",
+                perspectiveOrigin: "50% 50%",
+                borderRadius: 0,
+                overflow: "hidden",
+              }}
             >
               <div
                 className="relative h-full w-full will-change-transform"
                 style={{
                   ...cardInnerStyle,
+                  borderRadius: 0,
                   transformStyle: "preserve-3d",
                 }}
               >
                 <div
-                  className="absolute inset-0 h-full w-full overflow-hidden"
-                  data-transition-role="hero-image-card-front"
-                  style={{
-                    backfaceVisibility: "hidden",
-                    transform: "rotateY(0deg)",
-                    WebkitBackfaceVisibility: "hidden",
-                  }}
+                    className="absolute inset-0 h-full w-full overflow-hidden"
+                    data-transition-role="hero-image-card-front"
+                    style={{
+                      backfaceVisibility: "hidden",
+                      borderRadius: 0,
+                      transform: "rotateY(0deg) translateZ(0.1px)",
+                      WebkitBackfaceVisibility: "hidden",
+                    }}
                 >
                   <img
                     alt=""
@@ -651,162 +862,12 @@ export function HeroToSecondTransitionZone() {
                   data-transition-role="hero-image-card-back"
                   style={{
                     backfaceVisibility: "hidden",
-                    background: "#DA9767",
-                    transform: "rotateY(180deg)",
+                    borderRadius: 0,
+                    background: "#D09A6E",
+                    transform: "rotateY(180deg) translateZ(0.1px)",
                     WebkitBackfaceVisibility: "hidden",
                   }}
-                >
-                  <div
-                    className="absolute inset-0 overflow-hidden"
-                    data-transition-role="hero-image-card-back-static-typography"
-                    style={{ pointerEvents: "none" }}
-                  >
-                    <div
-                      style={{
-                        height: `${BACK_FACE_DESIGN_HEIGHT}px`,
-                        left: `${-backFaceCrop.previewCropX * backFaceCrop.cropScale}px`,
-                        overflow: "visible",
-                        position: "absolute",
-                        top: `${-backFaceCrop.previewCropY * backFaceCrop.cropScale}px`,
-                        transform: `scale(${backFaceCrop.cropScale})`,
-                        transformOrigin: "top left",
-                        width: `${BACK_FACE_DESIGN_WIDTH}px`,
-                        background: "#DA9767",
-                      }}
-                    >
-                      <div
-                        style={{
-                          height: `${BACK_FACE_DESIGN_HEIGHT}px`,
-                          overflow: "visible",
-                          position: "relative",
-                          width: `${BACK_FACE_DESIGN_WIDTH}px`,
-                        }}
-                      >
-                        <div
-                          style={{
-                            inset: 0,
-                            position: "absolute",
-                            transform: "scale(0.86)",
-                            transformOrigin: "50% 52.3%",
-                          }}
-                        >
-                          <div
-                            style={{
-                              height: "240px",
-                              left: "565px",
-                              position: "absolute",
-                              top: "85px",
-                              width: "417px",
-                            }}
-                          >
-                            <img
-                              alt=""
-                              aria-hidden="true"
-                              draggable={false}
-                              src="/assets/ability-intro/ability.svg"
-                              style={{
-                                display: "block",
-                                height: "100%",
-                                objectFit: "contain",
-                                width: "100%",
-                              }}
-                            />
-                          </div>
-                          <div
-                            style={{
-                              height: "230px",
-                              left: "555px",
-                              position: "absolute",
-                              top: "305px",
-                              width: "582px",
-                            }}
-                          >
-                            <img
-                              alt=""
-                              aria-hidden="true"
-                              draggable={false}
-                              src="/assets/ability-intro/happen-in.svg"
-                              style={{
-                                display: "block",
-                                height: "100%",
-                                objectFit: "contain",
-                                width: "100%",
-                              }}
-                            />
-                          </div>
-                          <div
-                            style={{
-                              height: "230px",
-                              left: "555px",
-                              position: "absolute",
-                              top: "515px",
-                              width: "582px",
-                            }}
-                          >
-                            <img
-                              alt=""
-                              aria-hidden="true"
-                              draggable={false}
-                              src="/assets/ability-intro/scenes.svg"
-                              style={{
-                                display: "block",
-                                height: "100%",
-                                objectFit: "contain",
-                                width: "100%",
-                              }}
-                            />
-                          </div>
-                          <div
-                            style={{
-                              color: "#FFFFFF",
-                              fontFamily:
-                                'Inter, "Helvetica Neue", Arial, sans-serif',
-                              fontSize: "18px",
-                              fontWeight: 700,
-                              left: "317px",
-                              lineHeight: "24px",
-                              position: "absolute",
-                              textTransform: "uppercase",
-                              top: "240px",
-                              whiteSpace: "nowrap",
-                              width: "215px",
-                            }}
-                          >
-                            <span style={{ display: "block" }}>
-                              NOT PROJECT LISTS
-                            </span>
-                            <span style={{ display: "block" }}>
-                              BUT CAPABILITY SLICES
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              color: "#FFFFFF",
-                              fontFamily:
-                                'Inter, "Helvetica Neue", Arial, sans-serif',
-                              fontSize: "18px",
-                              fontWeight: 700,
-                              left: "1167px",
-                              lineHeight: "24px",
-                              position: "absolute",
-                              textTransform: "uppercase",
-                              top: "454px",
-                              whiteSpace: "nowrap",
-                              width: "215px",
-                            }}
-                          >
-                            <span style={{ display: "block" }}>
-                              COMPLEX SCENES
-                            </span>
-                            <span style={{ display: "block" }}>
-                              CLEAR SYSTEMS
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                />
               </div>
             </div>
           </div>
@@ -854,46 +915,47 @@ function DebugPanel({ state }: { state: DebugState }) {
       <div>holdStartY: {state.holdStartY.toFixed(1)}</div>
       <div>holdDistance: {state.holdDistance.toFixed(1)}</div>
       <div>holdProgress: {state.holdProgress.toFixed(3)}</div>
+      <div>phase: {state.phase}</div>
+      <div>baseFlipTriggerY: {state.baseFlipTriggerY.toFixed(1)}</div>
+      <div>FLIP_TRIGGER_ADVANCE: {state.flipTriggerAdvance.toFixed(1)}</div>
+      <div>flipToBack keyframes: -10 / 194 / 180</div>
+      <div>
+        flipToBack durations: {FLIP_TO_BACK_ANTICIPATION_MS} /{" "}
+        {FLIP_TO_BACK_MAIN_MS} / {FLIP_TO_BACK_SETTLE_MS}
+      </div>
+      <div>flipToFront keyframes: 190 / -10 / 0</div>
+      <div>
+        flipToFront durations: {FLIP_TO_FRONT_ANTICIPATION_MS} /{" "}
+        {FLIP_TO_FRONT_MAIN_MS} / {FLIP_TO_FRONT_SETTLE_MS}
+      </div>
+      <div>expandDuration: {EXPAND_DURATION_MS}</div>
+      <div>shrinkDuration: {SHRINK_DURATION_MS}</div>
+      <div>expandEasing: easeInOutCubic</div>
       <div>flip offset: {state.flipTriggerOffset.toFixed(1)}</div>
       <div>flipTriggerY: {state.flipTriggerY.toFixed(1)}</div>
       <div>flipReverseY: {state.flipReverseY.toFixed(1)}</div>
       <div>reverse buffer: {state.reverseBuffer.toFixed(1)}</div>
       <div>flipped: {state.flipped ? "true" : "false"}</div>
-      <div>targetRotation: {state.targetRotation.toFixed(1)}</div>
-      <div>flipProgress debug: {state.flipProgress.toFixed(3)}</div>
       <div>rotationY: {state.rotationY.toFixed(1)}</div>
-      <div>spring velocity: {state.springVelocity.toFixed(2)}</div>
-      <div>rotation source: spring</div>
-      <div>back face: static typography</div>
+      <div>visualRotationY: {state.visualRotationY.toFixed(1)}</div>
+      <div>expandTriggerY: {state.expandTriggerY.toFixed(1)}</div>
+      <div>expandReverseY: {state.expandReverseY.toFixed(1)}</div>
+      <div>expanded: {state.expanded ? "true" : "false"}</div>
+      <div>expandValue: {state.expandValue.toFixed(3)}</div>
+      <div>visualExpand: {state.visualExpand.toFixed(3)}</div>
       <div>
-        real layout: {state.usesRealTypographyLayout ? "true" : "false"}
-      </div>
-      <div>typographyScale: {state.typographyScale.toFixed(2)}</div>
-      <div>
-        design: {state.designWidth.toFixed(0)} x{" "}
-        {state.designHeight.toFixed(0)}
+        flip timeline active: {state.flipTimelineActive ? "true" : "false"}
       </div>
       <div>
-        card: {state.cardWidth.toFixed(1)} x {state.cardHeight.toFixed(1)}
+        expand timeline active: {state.expandTimelineActive ? "true" : "false"}
       </div>
-      <div>cardAspect: {state.cardAspect.toFixed(3)}</div>
-      <div>
-        baseCrop: {state.baseCropWidth.toFixed(1)} x{" "}
-        {state.baseCropHeight.toFixed(1)}
-      </div>
-      <div>
-        previewZoom: {state.previewZoom.toFixed(2)}
-      </div>
-      <div>
-        previewCrop: {state.previewCropWidth.toFixed(1)} x{" "}
-        {state.previewCropHeight.toFixed(1)}
-      </div>
-      <div>
-        preview origin: {state.previewCropX.toFixed(1)} /{" "}
-        {state.previewCropY.toFixed(1)}
-      </div>
-      <div>cropScale: {state.cropScale.toFixed(3)}</div>
+      <div>back face: solid #D09A6E</div>
       <div>card opacity: {state.cardVisibleOpacity.toFixed(3)}</div>
+      <div>
+        card rect: {state.cardLeft.toFixed(1)} / {state.cardTop.toFixed(1)} /{" "}
+        {state.cardWidth.toFixed(1)} / {state.cardHeight.toFixed(1)}
+      </div>
+      <div>cardRadius: 0</div>
       <div>
         scroll hint fade: {state.scrollHintFadeProgress.toFixed(3)}
       </div>
