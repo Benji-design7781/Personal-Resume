@@ -7,6 +7,17 @@ const DESIGN_WIDTH = 1699;
 const DESIGN_HEIGHT = 794;
 const MAX_BOTTOM_BUFFER = 30;
 const MIN_BOTTOM_BUFFER = 5;
+const INTRO_REVEAL_TOTAL_MS = 150 + 680 + 660 + 120;
+const INTRO_PLAY_REQUEST_EVENT = "ability-intro:play-request";
+const INTRO_PLAY_COMPLETE_EVENT = "ability-intro:play-complete";
+
+type AbilityScenesIntroStageProps = {
+  controlled?: boolean;
+  disableAutoTrigger?: boolean;
+  introRunId?: number;
+  onIntroComplete?: () => void;
+  playIntro?: boolean;
+};
 
 function getCanvasScale() {
   if (typeof window === "undefined") {
@@ -16,12 +27,23 @@ function getCanvasScale() {
   return Math.min(window.innerWidth / DESIGN_WIDTH, window.innerHeight / DESIGN_HEIGHT);
 }
 
-export function AbilityScenesIntroStage() {
+export function AbilityScenesIntroStage({
+  controlled = false,
+  disableAutoTrigger = false,
+  introRunId = 0,
+  onIntroComplete,
+  playIntro = false,
+}: AbilityScenesIntroStageProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const hasPlayedRef = useRef(false);
   const pendingTimerRef = useRef<number | null>(null);
+  const controlledIntroTimerRef = useRef<number | null>(null);
+  const introCompleteTimerRef = useRef<number | null>(null);
+  const introFrameRef = useRef<number | null>(null);
+  const previousControlledRunRef = useRef<number | null>(null);
   const [isIntroPlayed, setIsIntroPlayed] = useState(false);
+  const [introPlaybackKey, setIntroPlaybackKey] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [scale, setScale] = useState(1);
 
@@ -63,7 +85,13 @@ export function AbilityScenesIntroStage() {
   useEffect(() => {
     const stage = stageRef.current;
 
-    if (!stage || prefersReducedMotion || hasPlayedRef.current) {
+    if (
+      !stage ||
+      prefersReducedMotion ||
+      hasPlayedRef.current ||
+      controlled ||
+      disableAutoTrigger
+    ) {
       return;
     }
 
@@ -141,7 +169,117 @@ export function AbilityScenesIntroStage() {
         window.cancelAnimationFrame(frameId);
       }
     };
-  }, [prefersReducedMotion]);
+  }, [controlled, disableAutoTrigger, prefersReducedMotion]);
+
+  useEffect(() => {
+    const clearControlledTimers = () => {
+      if (controlledIntroTimerRef.current !== null) {
+        window.clearTimeout(controlledIntroTimerRef.current);
+        controlledIntroTimerRef.current = null;
+      }
+
+      if (introCompleteTimerRef.current !== null) {
+        window.clearTimeout(introCompleteTimerRef.current);
+        introCompleteTimerRef.current = null;
+      }
+
+      if (introFrameRef.current !== null) {
+        window.cancelAnimationFrame(introFrameRef.current);
+        introFrameRef.current = null;
+      }
+    };
+
+    if (!controlled) {
+      previousControlledRunRef.current = null;
+      return clearControlledTimers;
+    }
+
+    if (prefersReducedMotion) {
+      hasPlayedRef.current = true;
+      setIsIntroPlayed(true);
+      onIntroComplete?.();
+      return clearControlledTimers;
+    }
+
+    if (!playIntro || previousControlledRunRef.current === introRunId) {
+      return clearControlledTimers;
+    }
+
+    previousControlledRunRef.current = introRunId;
+    clearControlledTimers();
+    hasPlayedRef.current = false;
+    setIsIntroPlayed(false);
+
+    controlledIntroTimerRef.current = window.setTimeout(() => {
+      controlledIntroTimerRef.current = null;
+      introFrameRef.current = window.requestAnimationFrame(() => {
+        introFrameRef.current = null;
+        hasPlayedRef.current = true;
+        setIntroPlaybackKey((current) => current + 1);
+        setIsIntroPlayed(true);
+
+        introCompleteTimerRef.current = window.setTimeout(() => {
+          introCompleteTimerRef.current = null;
+          window.dispatchEvent(
+            new CustomEvent(INTRO_PLAY_COMPLETE_EVENT, {
+              detail: { runId: introRunId },
+            }),
+          );
+          onIntroComplete?.();
+        }, INTRO_REVEAL_TOTAL_MS);
+      });
+    }, 0);
+
+    return clearControlledTimers;
+  }, [controlled, introRunId, onIntroComplete, playIntro, prefersReducedMotion]);
+
+  useEffect(() => {
+    if (!controlled) {
+      return;
+    }
+
+    const handlePlayRequest = (event: Event) => {
+      const customEvent = event as CustomEvent<{ runId?: number }>;
+      const requestedRunId = customEvent.detail?.runId ?? Date.now();
+
+      previousControlledRunRef.current = requestedRunId - 1;
+      hasPlayedRef.current = false;
+      setIsIntroPlayed(false);
+
+      window.requestAnimationFrame(() => {
+        previousControlledRunRef.current = requestedRunId;
+        hasPlayedRef.current = true;
+        setIntroPlaybackKey((current) => current + 1);
+        setIsIntroPlayed(true);
+
+        if (introCompleteTimerRef.current !== null) {
+          window.clearTimeout(introCompleteTimerRef.current);
+        }
+
+        introCompleteTimerRef.current = window.setTimeout(() => {
+          introCompleteTimerRef.current = null;
+          window.dispatchEvent(
+            new CustomEvent(INTRO_PLAY_COMPLETE_EVENT, {
+              detail: { runId: requestedRunId },
+            }),
+          );
+          onIntroComplete?.();
+        }, INTRO_REVEAL_TOTAL_MS);
+      });
+    };
+
+    window.addEventListener(
+      INTRO_PLAY_REQUEST_EVENT,
+      handlePlayRequest as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        INTRO_PLAY_REQUEST_EVENT,
+        handlePlayRequest as EventListener,
+      );
+    };
+  }, [controlled, onIntroComplete]);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -339,6 +477,7 @@ export function AbilityScenesIntroStage() {
     <section
       aria-label="能力发生在场景里"
       data-measure="ability-intro-stage"
+      data-transition-intro-section="true"
       ref={sectionRef}
       className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden"
       style={{ backgroundColor: "#DA9767", overflowAnchor: "none" }}
@@ -346,11 +485,13 @@ export function AbilityScenesIntroStage() {
       <div aria-hidden="true" className="h-[10svh]" style={{ backgroundColor: "#DA9767" }} />
 
       <div
+        data-transition-intro-sticky-stage="true"
         ref={stageRef}
         className="sticky top-0 h-[100svh] w-screen overflow-hidden"
         style={{ backgroundColor: "#DA9767" }}
       >
         <div
+          key={introPlaybackKey}
           className={`ability-scenes-intro-canvas absolute left-1/2 text-white ${
             isIntroPlayed ? "is-intro-played" : ""
           } ${prefersReducedMotion ? "is-intro-reduced-motion" : ""}`}

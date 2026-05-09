@@ -1,5 +1,4 @@
 import { AbilityCardsTetrisStage } from "@/components/AbilityCardsTetrisStage";
-import { AbilityScenesIntroStage } from "@/components/AbilityScenesIntroStage";
 import { HeroSection } from "@/components/HeroSection";
 import { HeroToSecondTransitionZone } from "@/components/HeroToSecondTransitionZone";
 import { ProductProcessSection } from "@/components/ProductProcessSection";
@@ -13,8 +12,19 @@ export default function Home() {
       <SiteHeader />
       <HeroSection />
       <HeroToSecondTransitionZone />
-      <AbilityScenesIntroStage />
-      <AbilityCardsTetrisStage />
+      <div
+        aria-hidden="true"
+        data-ability-lower-collapse-sentinel="true"
+        style={{ height: 0 }}
+      />
+      <div
+        data-ability-lower-shell="true"
+        style={{
+          position: "relative",
+        }}
+      >
+        <AbilityCardsTetrisStage />
+      </div>
       <ProductProcessSection />
     </main>
   );

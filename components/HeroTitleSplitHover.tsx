@@ -18,10 +18,24 @@ type LetterAnimationState = {
   token: string | null;
 };
 
-const CURRENT_DURATION = 680;
-const NEXT_DELAY = 160;
-const NEXT_DURATION = 680;
+const LETTER_DURATION = 560;
 const LETTER_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
+const AUTO_SWEEP_DELAY = 220;
+const AUTO_SWEEP_STAGGER = 34;
+
+const CURRENT_KEYFRAMES: Keyframe[] = [
+  { transform: "translateX(0%)", offset: 0 },
+  { transform: "translateX(-32%)", offset: 0.32 },
+  { transform: "translateX(-72%)", offset: 0.68 },
+  { transform: "translateX(-100%)", offset: 1 },
+];
+
+const NEXT_KEYFRAMES: Keyframe[] = [
+  { transform: "translateX(100%)", offset: 0 },
+  { transform: "translateX(68%)", offset: 0.32 },
+  { transform: "translateX(28%)", offset: 0.68 },
+  { transform: "translateX(0%)", offset: 1 },
+];
 
 function createLetterState(): LetterAnimationState {
   return {
@@ -37,11 +51,13 @@ export function HeroTitleSplitHover({
   style,
   text,
 }: HeroTitleSplitHoverProps) {
+  const wrapperLetterRefs = useRef(new Map<number, HTMLSpanElement>());
   const currentLetterRefs = useRef(new Map<number, HTMLSpanElement>());
   const nextLetterRefs = useRef(new Map<number, HTMLSpanElement>());
   const letterStatesRef = useRef(new Map<number, LetterAnimationState>());
-  const reduceMotionRef = useRef(false);
+  const pendingAutoSweepTimersRef = useRef<number[]>([]);
   const animationTokenRef = useRef(0);
+  const reduceMotionRef = useRef(false);
 
   useEffect(() => {
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -56,6 +72,16 @@ export function HeroTitleSplitHover({
 
     return () => {
       motionQuery.removeEventListener("change", handleMotionPreferenceChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      pendingAutoSweepTimersRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+      pendingAutoSweepTimersRef.current = [];
+
       letterStatesRef.current.forEach((state) => {
         if (state.rafId !== null) {
           cancelAnimationFrame(state.rafId);
@@ -63,11 +89,12 @@ export function HeroTitleSplitHover({
         state.currentAnimation?.cancel();
         state.nextAnimation?.cancel();
       });
+
       letterStatesRef.current.clear();
     };
   }, []);
 
-  const setLetterTransform = (charIndex: number, transform: string) => {
+  const setIdleTransform = (charIndex: number) => {
     const currentLetter = currentLetterRefs.current.get(charIndex);
     const nextLetter = nextLetterRefs.current.get(charIndex);
 
@@ -75,53 +102,43 @@ export function HeroTitleSplitHover({
       return;
     }
 
-    currentLetter.style.transform = transform;
-    nextLetter.style.transform = transform;
+    currentLetter.style.transform = "translateX(0%)";
+    nextLetter.style.transform = "translateX(100%)";
   };
 
-  const resetLetter = (charIndex: number) => {
-    setLetterTransform(charIndex, "translateX(0%)");
+  const clearLetterWork = (state: LetterAnimationState) => {
+    if (state.rafId !== null) {
+      cancelAnimationFrame(state.rafId);
+    }
+    state.currentAnimation?.cancel();
+    state.nextAnimation?.cancel();
+    state.currentAnimation = null;
+    state.nextAnimation = null;
+    state.rafId = null;
   };
 
-  const finishLetter = (charIndex: number) => {
-    setLetterTransform(charIndex, "translateX(-100%)");
-  };
-
-  const handleLetterPointerEnter = (
-    _event: PointerEvent<HTMLSpanElement>,
-    charIndex: number,
-  ) => {
+  const playLetterAnimation = (charIndex: number) => {
     const currentLetter = currentLetterRefs.current.get(charIndex);
     const nextLetter = nextLetterRefs.current.get(charIndex);
     const state = letterStatesRef.current.get(charIndex) ?? createLetterState();
 
-    if (!currentLetter || !nextLetter || reduceMotionRef.current) {
-      state.currentAnimation?.cancel();
-      state.nextAnimation?.cancel();
-      if (state.rafId !== null) {
-        cancelAnimationFrame(state.rafId);
-      }
-      state.currentAnimation = null;
-      state.nextAnimation = null;
-      state.rafId = null;
+    if (!currentLetter || !nextLetter) {
+      clearLetterWork(state);
       state.token = null;
       letterStatesRef.current.set(charIndex, state);
-      resetLetter(charIndex);
       return;
     }
 
-    state.currentAnimation?.cancel();
-    state.nextAnimation?.cancel();
-    if (state.rafId !== null) {
-      cancelAnimationFrame(state.rafId);
-    }
-
+    clearLetterWork(state);
     animationTokenRef.current += 1;
     const token = `${charIndex}-${animationTokenRef.current}`;
-    state.currentAnimation = null;
-    state.nextAnimation = null;
     state.token = token;
-    resetLetter(charIndex);
+    setIdleTransform(charIndex);
+    letterStatesRef.current.set(charIndex, state);
+
+    if (reduceMotionRef.current) {
+      return;
+    }
 
     state.rafId = requestAnimationFrame(() => {
       const latestState = letterStatesRef.current.get(charIndex);
@@ -130,34 +147,23 @@ export function HeroTitleSplitHover({
         return;
       }
 
-      const currentAnimation = currentLetter.animate(
-        [
-          { transform: "translateX(0%)" },
-          { transform: "translateX(-100%)" },
-        ],
-        {
-          delay: 0,
-          duration: CURRENT_DURATION,
-          easing: LETTER_EASING,
-          fill: "forwards",
-        },
-      );
-      const nextAnimation = nextLetter.animate(
-        [
-          { transform: "translateX(0%)" },
-          { transform: "translateX(-100%)" },
-        ],
-        {
-          delay: NEXT_DELAY,
-          duration: NEXT_DURATION,
-          easing: LETTER_EASING,
-          fill: "forwards",
-        },
-      );
+      latestState.rafId = null;
+
+      const currentAnimation = currentLetter.animate(CURRENT_KEYFRAMES, {
+        delay: 0,
+        duration: LETTER_DURATION,
+        easing: LETTER_EASING,
+        fill: "both",
+      });
+      const nextAnimation = nextLetter.animate(NEXT_KEYFRAMES, {
+        delay: 0,
+        duration: LETTER_DURATION,
+        easing: LETTER_EASING,
+        fill: "both",
+      });
 
       latestState.currentAnimation = currentAnimation;
       latestState.nextAnimation = nextAnimation;
-      latestState.rafId = null;
       letterStatesRef.current.set(charIndex, latestState);
 
       Promise.allSettled([
@@ -170,15 +176,58 @@ export function HeroTitleSplitHover({
           return;
         }
 
-        finishLetter(charIndex);
         currentAnimation.cancel();
         nextAnimation.cancel();
         finishedState.currentAnimation = null;
         finishedState.nextAnimation = null;
+        setIdleTransform(charIndex);
         letterStatesRef.current.set(charIndex, finishedState);
       });
     });
+
     letterStatesRef.current.set(charIndex, state);
+  };
+
+  useEffect(() => {
+    Array.from(text).forEach((character, charIndex) => {
+      if (character !== " ") {
+        setIdleTransform(charIndex);
+      }
+    });
+
+    if (reduceMotionRef.current) {
+      return;
+    }
+
+    pendingAutoSweepTimersRef.current.forEach((timerId) => {
+      window.clearTimeout(timerId);
+    });
+    pendingAutoSweepTimersRef.current = [];
+
+    Array.from(text).forEach((character, charIndex) => {
+      if (character === " ") {
+        return;
+      }
+
+      const timerId = window.setTimeout(() => {
+        playLetterAnimation(charIndex);
+      }, AUTO_SWEEP_DELAY + charIndex * AUTO_SWEEP_STAGGER);
+      pendingAutoSweepTimersRef.current.push(timerId);
+    });
+
+    return () => {
+      pendingAutoSweepTimersRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+      pendingAutoSweepTimersRef.current = [];
+    };
+  }, [text]);
+
+  const handleLetterPointerEnter = (
+    _event: PointerEvent<HTMLSpanElement>,
+    charIndex: number,
+  ) => {
+    playLetterAnimation(charIndex);
   };
 
   return (
@@ -203,15 +252,37 @@ export function HeroTitleSplitHover({
             data-letter-index={index}
             key={`${character}-${index}`}
             onPointerEnter={(event) => handleLetterPointerEnter(event, index)}
+            ref={(element) => {
+              if (element) {
+                wrapperLetterRefs.current.set(index, element);
+              } else {
+                wrapperLetterRefs.current.delete(index);
+              }
+            }}
+            style={{
+              position: "relative",
+              display: "inline-block",
+              verticalAlign: "baseline",
+              overflow: "visible",
+              clipPath: "inset(-0.24em 0 -0.24em 0)",
+              cursor: "default",
+            }}
           >
             <span
               className={styles.heroTitleLetterCurrent}
               ref={(element) => {
                 if (element) {
                   currentLetterRefs.current.set(index, element);
+                  element.style.transform = "translateX(0%)";
                 } else {
                   currentLetterRefs.current.delete(index);
                 }
+              }}
+              style={{
+                display: "block",
+                transform: "translateX(0%)",
+                willChange: "transform",
+                pointerEvents: "none",
               }}
             >
               {character}
@@ -221,9 +292,19 @@ export function HeroTitleSplitHover({
               ref={(element) => {
                 if (element) {
                   nextLetterRefs.current.set(index, element);
+                  element.style.transform = "translateX(100%)";
                 } else {
                   nextLetterRefs.current.delete(index);
                 }
+              }}
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                display: "block",
+                transform: "translateX(100%)",
+                willChange: "transform",
+                pointerEvents: "none",
               }}
             >
               {character}
