@@ -480,15 +480,15 @@ export function AbilityScenesIntroStage({
       data-transition-intro-section="true"
       ref={sectionRef}
       className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden"
-      style={{ backgroundColor: "#DA9767", overflowAnchor: "none" }}
+      style={{ backgroundColor: "#EA9B45", overflowAnchor: "none" }}
     >
-      <div aria-hidden="true" className="h-[10svh]" style={{ backgroundColor: "#DA9767" }} />
+      <div aria-hidden="true" className="h-[10svh]" style={{ backgroundColor: "#EA9B45" }} />
 
       <div
         data-transition-intro-sticky-stage="true"
         ref={stageRef}
         className="sticky top-0 h-[100svh] w-screen overflow-hidden"
-        style={{ backgroundColor: "#DA9767" }}
+        style={{ backgroundColor: "#EA9B45" }}
       >
         <div
           key={introPlaybackKey}
@@ -553,9 +553,9 @@ export function AbilityScenesIntroStage({
 
       <div
         aria-hidden="true"
-        className="bg-[#DA9767]"
+        className="bg-[#EA9B45]"
         style={{
-          backgroundColor: "#DA9767",
+          backgroundColor: "#EA9B45",
           height: "var(--intro-bottom-buffer-height, 30svh)",
           overflowAnchor: "none",
         }}

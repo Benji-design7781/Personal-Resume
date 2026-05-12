@@ -9,7 +9,7 @@ const BRIDGE_VERSION = "final-scroll-bridge";
 const HERO_VISUAL_SELECTOR = '[data-debug-name="hero-center-visual"]';
 const HERO_VISUAL_SRC = "/assets/hero/hero-center-visual.jpg";
 
-const ORANGE = "#DA9767";
+const ORANGE = "#EA9B45";
 const DESIGN_WIDTH = 1699;
 const DESIGN_HEIGHT = 794;
 const TRANSITION_SEGMENT_HEIGHT_SVH = 220;
@@ -29,7 +29,7 @@ const FINAL_ORANGE_GAP_SVH = 5;
 const ORANGE_TAIL_COLLAPSE_RANGE_SVH =
   ORANGE_TAIL_HEIGHT_SVH - FINAL_ORANGE_GAP_SVH;
 const ORANGE_TAIL_COLLAPSE_DISTANCE_VH = 0.4;
-const FIXED_SEAM_PX = 30;
+const FIXED_SEAM_PX = 5;
 const SMALL_TEXT_SCROLL_FACTOR = 0.1;
 const SMALL_TEXT_MAX_OFFSET = 64;
 const SMALL_TEXT_SMOOTH = 0.12;
@@ -836,21 +836,13 @@ export function HeroToSecondTransitionZone() {
       const lowerFirstVisualRect = lowerFirstVisual?.getBoundingClientRect() ?? null;
       const fullTailPx = viewportHeight * (ORANGE_TAIL_HEIGHT_SVH / 100);
       const minTailPx = viewportHeight * (FINAL_ORANGE_GAP_SVH / 100);
-      const tailTopDocY =
-        orangeTailRect !== null
-          ? orangeTailRect.top + scrollY
-          : stickyEndY + viewportHeight;
-      const collapseStartY =
-        tailTopDocY + fullTailPx + FIXED_SEAM_PX - viewportHeight;
+      const seamProbeTop =
+        orangeLowerSeamRect !== null
+          ? orangeLowerSeamRect.top
+          : Number.POSITIVE_INFINITY;
       const orangeTailCollapseProgress = prefersReducedMotion
-        ? lowerSectionEnteredViewport
-          ? 1
-          : 0
-        : lowerSectionEnteredViewport
-          ? clamp(
-              (scrollY - collapseStartY) / Math.max(1, collapseDistance),
-            )
-          : 0;
+        ? clamp((viewportHeight - seamProbeTop) / Math.max(1, viewportHeight))
+        : clamp((viewportHeight - seamProbeTop) / Math.max(1, viewportHeight));
       const orangeTailHeightPx = lerp(
         fullTailPx,
         minTailPx,

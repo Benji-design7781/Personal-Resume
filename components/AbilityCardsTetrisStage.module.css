@@ -1,4 +1,7 @@
 .section {
+  --ability-card-orange: #ea9b45;
+  --ability-card-orange-soft: rgba(234, 155, 69, 0.38);
+  --ability-card-orange-tint: #f3c58e;
   position: relative;
   left: 50%;
   right: 50%;
@@ -29,7 +32,7 @@
 .card {
   position: absolute;
   overflow: hidden;
-  background: #df822f;
+  background: var(--ability-card-orange);
   box-shadow: 0 8px 20px rgba(93, 54, 28, 0.05);
   color: #ffffff;
   user-select: none;
@@ -60,7 +63,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background: rgba(218, 151, 103, 0.38);
+  background: var(--ability-card-orange-soft);
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.06),
     0 10px 20px rgba(160, 94, 54, 0.16);
@@ -155,7 +158,7 @@
   border: 0;
   border-radius: 999px;
   overflow: hidden;
-  background: #eec5a9;
+  background: var(--ability-card-orange-tint);
   pointer-events: none;
   will-change: opacity;
 }
@@ -196,5 +199,5 @@
 }
 
 .compactCard:hover .compactArrow {
-  background: #df822f;
+  background: var(--ability-card-orange);
 }
