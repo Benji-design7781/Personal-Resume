@@ -1,6 +1,7 @@
 import { AbilityCardsTetrisStage } from "@/components/AbilityCardsTetrisStage";
 import { HeroSection } from "@/components/HeroSection";
 import { HeroToSecondTransitionZone } from "@/components/HeroToSecondTransitionZone";
+import { ProductProcessBridgeSection } from "@/components/ProductProcessBridgeSection";
 import { ProductProcessSection } from "@/components/ProductProcessSection";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -25,6 +26,7 @@ export default function Home() {
       >
         <AbilityCardsTetrisStage />
       </div>
+      <ProductProcessBridgeSection />
       <ProductProcessSection />
     </main>
   );

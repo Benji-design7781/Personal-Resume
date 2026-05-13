@@ -1,0 +1,105 @@
+.section {
+  width: 100%;
+  background: #f2f2f6;
+  overflow-x: clip;
+}
+
+.frame {
+  width: min(100%, 1699px);
+  aspect-ratio: 1699 / 360;
+  margin: 0 auto;
+  background: #f2f2f6;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+}
+
+.visualGroup {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+.svg:not([data-classified="true"]) .visualGroup {
+  opacity: 0;
+}
+
+.svg[data-classified="true"] [data-title-letter="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+.svg[data-classified="true"] [data-line-path="true"] {
+  opacity: 1;
+  transform: none;
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+
+.svg[data-classified="true"] [data-meta-group="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+.revealMaskRect {
+  opacity: 1;
+  transform: scaleY(0);
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  will-change: transform;
+}
+
+.svg[data-visible="true"] [data-title-mask-rect="true"] {
+  animation: revealMaskIn var(--letter-duration) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--letter-delay);
+}
+
+.svg[data-visible="true"] [data-meta-mask-rect="true"] {
+  animation: revealMaskIn var(--meta-duration) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--meta-delay);
+}
+
+.svg[data-reduced-motion="true"] [data-title-letter="true"],
+.svg[data-reduced-motion="true"] [data-line-path="true"],
+.svg[data-reduced-motion="true"] [data-meta-group="true"] {
+  animation: none;
+  filter: none;
+  opacity: 1;
+  transform: none;
+}
+
+.svg[data-reduced-motion="true"] .revealMaskRect {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes revealMaskIn {
+  from {
+    transform: scaleY(0);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svg [data-title-letter="true"],
+  .svg [data-line-path="true"],
+  .svg [data-meta-group="true"] {
+    animation: none;
+    filter: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .svg .revealMaskRect {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
