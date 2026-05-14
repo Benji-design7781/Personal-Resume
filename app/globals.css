@@ -21,14 +21,14 @@
 html,
 body {
   min-height: 100%;
-  background: #f2f2f6;
+  background: #ebeae4;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
 body {
   margin: 0;
-  background: #f2f2f6;
+  background: #ebeae4;
   color: #334155;
   overflow-x: hidden;
 }

@@ -6,7 +6,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import styles from "./ProductProcessBridgeSection.module.css";
 
 const BRIDGE_SVG_PATH = "/bridge/product-process-bridge.svg";
-const BRIDGE_BACKGROUND = "#F2F2F6";
+const BRIDGE_BACKGROUND = "#EBEAE4";
 const EXPECTED_VIEW_BOX = "0 0 1699 360";
 const EXPECTED_TITLE_LETTER_COUNT = 14;
 const TITLE_DELAYS = [0, 52, 94, 168, 218, 286, 348, 520, 586, 654, 724, 808, 892, 948];

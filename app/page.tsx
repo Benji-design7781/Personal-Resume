@@ -3,12 +3,13 @@ import { HeroSection } from "@/components/HeroSection";
 import { HeroToSecondTransitionZone } from "@/components/HeroToSecondTransitionZone";
 import { ProductProcessBridgeSection } from "@/components/ProductProcessBridgeSection";
 import { ProductProcessSection } from "@/components/ProductProcessSection";
+import { ProductProcessV2Section } from "@/components/ProductProcessV2Section";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import { SiteHeader } from "@/components/SiteHeader";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#F2F2F6]">
+    <main className="min-h-screen bg-[#EBEAE4]">
       <SmoothScrollProvider />
       <SiteHeader />
       <HeroSection />
@@ -27,7 +28,8 @@ export default function Home() {
         <AbilityCardsTetrisStage />
       </div>
       <ProductProcessBridgeSection />
-      <ProductProcessSection />
+      <ProductProcessV2Section />
+      {/* <ProductProcessSection /> */}
     </main>
   );
 }

@@ -9,7 +9,7 @@ const BRIDGE_VERSION = "final-scroll-bridge";
 const HERO_VISUAL_SELECTOR = '[data-debug-name="hero-center-visual"]';
 const HERO_VISUAL_SRC = "/assets/hero/hero-center-visual.jpg";
 
-const ORANGE = "#EA9B45";
+const ORANGE = "#6FA9E7";
 const DESIGN_WIDTH = 1699;
 const DESIGN_HEIGHT = 794;
 const TRANSITION_SEGMENT_HEIGHT_SVH = 220;
@@ -1595,7 +1595,7 @@ export function HeroToSecondTransitionZone() {
         [data-orange-lower-seam="true"] {
           height: ${FIXED_SEAM_PX}px;
           flex-shrink: 0;
-          background: #f3f3f7;
+          background: #ebeae4;
           overflow-anchor: none;
         }
 
@@ -1632,7 +1632,7 @@ export function HeroToSecondTransitionZone() {
         }
 
         .bridge-card-front {
-          background: #f3f3f7;
+          background: #ebeae4;
           will-change: opacity;
         }
 

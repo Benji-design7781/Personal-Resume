@@ -1,14 +1,15 @@
 .section {
   width: 100%;
-  background: #f2f2f6;
+  background: #ebeae4;
   overflow-x: clip;
+  padding-bottom: 100px;
 }
 
 .frame {
   width: min(100%, 1699px);
   aspect-ratio: 1699 / 360;
   margin: 0 auto;
-  background: #f2f2f6;
+  background: #ebeae4;
 }
 
 .svg {

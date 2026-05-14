@@ -66,7 +66,7 @@ export function HeroSection() {
   return (
     <section
       id="home"
-      className="relative flex min-h-screen w-full justify-center overflow-hidden bg-[#F3F3F7]"
+      className="relative flex min-h-screen w-full justify-center overflow-hidden bg-[#EBEAE4]"
     >
       <div style={stageStyle}>
         <HeroTitleSplitHover
@@ -93,7 +93,7 @@ export function HeroSection() {
           data-debug-name="hero-right-copy"
           style={{
             ...sideCopyStyle,
-            color: "#2FBFED",
+            color: "#6FA9E7",
             left: "1273px",
             width: "234px",
           }}

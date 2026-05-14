@@ -1,7 +1,7 @@
 .section {
-  --ability-card-orange: #ea9b45;
-  --ability-card-orange-soft: rgba(234, 155, 69, 0.38);
-  --ability-card-orange-tint: #f3c58e;
+  --ability-card-orange: #6fa9e7;
+  --ability-card-orange-soft: rgba(111, 169, 231, 0.38);
+  --ability-card-orange-tint: #bdd9f6;
   position: relative;
   left: 50%;
   right: 50%;
@@ -9,14 +9,14 @@
   margin-right: -50vw;
   margin-left: -50vw;
   overflow: hidden;
-  background: #f3f3f7;
+  background: #ebeae4;
 }
 
 .wrapper {
   position: relative;
   width: 100vw;
   overflow: hidden;
-  background: #f3f3f7;
+  background: #ebeae4;
 }
 
 .canvas {
@@ -33,7 +33,7 @@
   position: absolute;
   overflow: hidden;
   background: var(--ability-card-orange);
-  box-shadow: 0 8px 20px rgba(93, 54, 28, 0.05);
+  box-shadow: 0 8px 20px rgba(32, 76, 126, 0.06);
   color: #ffffff;
   user-select: none;
   transition: none;
@@ -66,7 +66,7 @@
   background: var(--ability-card-orange-soft);
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.06),
-    0 10px 20px rgba(160, 94, 54, 0.16);
+    0 10px 20px rgba(50, 103, 165, 0.18);
 }
 
 .iconTile img {
