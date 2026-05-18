@@ -20,8 +20,9 @@ const graviticaCompressed = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "SamuelQZQ Hero Replica",
-  description: "A faithful recreation of the visible SamuelQZQ homepage hero.",
+  title: "Benji | Systems, Workflows, and Product Judgment",
+  description:
+    "A personal site by Benji, presenting capability slices across AI product design, Agent workflows, complex system thinking, and product delivery.",
 };
 
 export default function RootLayout({

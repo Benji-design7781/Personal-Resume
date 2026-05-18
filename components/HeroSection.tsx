@@ -80,7 +80,7 @@ export function HeroSection() {
           data-debug-name="hero-left-copy"
           style={{
             ...sideCopyStyle,
-            color: "#EA9B45",
+            color: "#F19252",
             left: "214px",
             width: "191px",
           }}

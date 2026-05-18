@@ -11,7 +11,7 @@ const ACTIVE_TOP = 10;
 const ACTIVE_H = 794;
 const TAIL_H = 246;
 const PRE_SCROLL_DESIGN = ACTIVE_TOP;
-const BACKGROUND_ORANGE = "#EA9053";
+const BACKGROUND_ORANGE = "#F19252";
 const TEXT_FONT_STACK =
   '"Noto Sans SC", "Noto Sans CJK SC", "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif';
 const COPY_SWITCH_01 = 0.3;
