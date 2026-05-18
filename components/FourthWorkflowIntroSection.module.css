@@ -84,10 +84,68 @@
   display: block;
   width: 936px;
   height: auto;
+  overflow: visible;
   pointer-events: none;
   user-select: none;
   transform-origin: center center;
   will-change: opacity, transform;
+}
+
+.casesTypographyLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  width: 100vw;
+  height: 100svh;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.casesSvg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--cases-color);
+  overflow: hidden;
+  text-rendering: geometricPrecision;
+  will-change: opacity;
+}
+
+.casesSvgText {
+  fill: currentColor;
+  font-family:
+    var(--font-gravitica-compressed),
+    Impact,
+    "Arial Narrow",
+    sans-serif;
+  font-size: 248px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  shape-rendering: geometricPrecision;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.casesWhiteFill,
+.casesBlueFill {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.casesWhiteFill {
+  z-index: 2;
+  background: #ffffff;
+  opacity: var(--cases-white-fill-opacity);
+}
+
+.casesBlueFill {
+  z-index: 3;
+  background: var(--cases-blue-color);
+  opacity: var(--cases-blue-fill-opacity);
 }
 
 .debugProgress {
@@ -132,6 +190,7 @@
   .finalTitle {
     width: 836px;
   }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -144,13 +203,29 @@
   }
 
   .initialTitle,
-  .cardRail {
+  .cardRail,
+  .finalTitle {
     display: none;
   }
 
-  .finalTitle {
+  .casesTypographyLayer {
+    z-index: 60;
+  }
+
+  .casesSvg {
     opacity: 1 !important;
-    transform: translate3d(-50%, -50%, 0) scale(1) !important;
+  }
+
+  .casesSvgText {
+    fill: #ffffff;
     will-change: auto;
+  }
+
+  .casesWhiteFill {
+    opacity: 0 !important;
+  }
+
+  .casesBlueFill {
+    opacity: 1 !important;
   }
 }

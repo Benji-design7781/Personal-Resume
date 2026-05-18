@@ -4,12 +4,28 @@ import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import styles from "@/components/FourthWorkflowIntroSection.module.css";
+import { WorkflowFinalTitleSvg } from "@/components/WorkflowFinalTitleSvg";
 
 const DESIGN_W = 2048;
 const DESIGN_H = 956;
-const SCROLL_RANGE_VH = 5.2;
+const WORKFLOW_RANGE_VH = 5.2;
+const TRANSITION_RANGE_VH = 1.6;
+const SCROLL_RANGE_VH = WORKFLOW_RANGE_VH + TRANSITION_RANGE_VH;
+const WORKFLOW_PROGRESS_END = WORKFLOW_RANGE_VH / SCROLL_RANGE_VH;
 const DEBUG_FRAME_COUNT = 185;
 const CARD_RENDER_W = 400;
+const FINAL_TITLE_SPLIT_Y = 120;
+const CASES_BLUE = "#6fa9e7";
+const CASES_SVG_W = 1000;
+const CASES_SVG_H = 260;
+const CASES_CENTER_X = CASES_SVG_W / 2;
+const CASES_CENTER_Y = CASES_SVG_H / 2;
+const CASES_TINY_VIEWBOX_W = 14000;
+const CASES_ENTRY_VIEWBOX_W = 4200;
+const CASES_REST_VIEWBOX_W = 760;
+const CASES_FINAL_VIEWBOX_W = 9;
+const CASES_MIDDLE_S_ANCHOR_X = 502.8;
+const CASES_MIDDLE_S_ANCHOR_Y = 107.5;
 
 type WorkflowCard = {
   alt: string;
@@ -32,12 +48,14 @@ type ScrollMetrics = {
   canvasScale: number;
   scrollRange: number;
   sectionHeight: number | string;
+  viewportAspect: number;
 };
 
 const DEFAULT_METRICS: ScrollMetrics = {
   canvasScale: 1,
   scrollRange: 1,
   sectionHeight: "620svh",
+  viewportAspect: 16 / 9,
 };
 
 const workflowCards: WorkflowCard[] = [
@@ -156,6 +174,11 @@ function smoothstep(edge0: number, edge1: number, value: number) {
   return t * t * (3 - 2 * t);
 }
 
+function easeOutCubic(value: number) {
+  const t = clamp(value);
+  return 1 - (1 - t) ** 3;
+}
+
 function throughMid(start: number, mid: number, end: number, progress: number) {
   if (progress < 0.5) {
     return lerp(start, mid, progress / 0.5);
@@ -197,6 +220,7 @@ function cardOpacity(cardProgress: number) {
 
 export function FourthWorkflowIntroSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef<number | null>(null);
   const [metrics, setMetrics] = useState<ScrollMetrics>(DEFAULT_METRICS);
   const [progress, setProgress] = useState(0);
@@ -216,6 +240,11 @@ export function FourthWorkflowIntroSection() {
     const readMetrics = (): ScrollMetrics => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
+      const stageRect = stageRef.current?.getBoundingClientRect();
+      const aspectWidth =
+        stageRect && stageRect.width > 0 ? stageRect.width : viewportWidth;
+      const aspectHeight =
+        stageRect && stageRect.height > 0 ? stageRect.height : viewportHeight;
       const scrollRange = viewportHeight * SCROLL_RANGE_VH;
       const canvasScale = Math.min(
         viewportWidth / DESIGN_W,
@@ -226,6 +255,7 @@ export function FourthWorkflowIntroSection() {
         canvasScale,
         scrollRange,
         sectionHeight: viewportHeight + scrollRange,
+        viewportAspect: aspectWidth / Math.max(1, aspectHeight),
       };
     };
 
@@ -271,25 +301,92 @@ export function FourthWorkflowIntroSection() {
     };
   }, [forcedProgress]);
 
-  const visualProgress = forcedProgress ?? progress;
+  const rawProgress = forcedProgress ?? progress;
+  const visualProgress = remap(rawProgress, 0, WORKFLOW_PROGRESS_END);
+  const transitionProgress = remap(rawProgress, WORKFLOW_PROGRESS_END, 1);
   const titleExitProgress = smoothstep(0.08, 0.24, visualProgress);
   const titleOpacity = 1 - titleExitProgress;
   const titleScale = lerp(1, 0.965, titleExitProgress);
   const titleTranslateY = lerp(0, -34, titleExitProgress);
   const finalProgress = smoothstep(0.66, 0.86, visualProgress);
-  const finalOpacity = finalProgress;
+  const cardCompletionP = smoothstep(0, 0.16, transitionProgress);
+  const cardMotionProgress = visualProgress + cardCompletionP * 0.02;
+  const titleSplitP = smoothstep(0.16, 0.48, transitionProgress);
+  const titleExitP = smoothstep(0.42, 0.56, transitionProgress);
+  const finalOpacity = finalProgress * (1 - titleExitP);
   const finalTranslateY = lerp(34, 0, finalProgress);
-  const finalScale = lerp(0.965, 1, finalProgress);
+  const finalScale = lerp(0.965, 1, finalProgress) * (1 + titleSplitP * 8);
+  const finalTitleTopTransform = `translate(0 ${(
+    -FINAL_TITLE_SPLIT_Y * titleSplitP
+  ).toFixed(3)})`;
+  const finalTitleBottomTransform = `translate(0 ${(
+    FINAL_TITLE_SPLIT_Y * titleSplitP
+  ).toFixed(3)})`;
+  const casesBirthP = smoothstep(0.415, 0.5, transitionProgress);
+  const casesGrowP = smoothstep(0.5, 0.64, transitionProgress);
+  const casesZoomP = smoothstep(0.64, 0.86, transitionProgress);
+  const casesOpacityP = smoothstep(0.415, 0.43, transitionProgress);
+  const whiteFillP = smoothstep(0.84, 0.88, transitionProgress);
+  const blueSwitchP = smoothstep(0.94, 1, transitionProgress);
+  const casesOpacity = casesOpacityP * (1 - blueSwitchP);
+  const casesZoomEase = easeOutCubic(casesZoomP);
+  const casesBirthViewBoxW = lerp(
+    CASES_TINY_VIEWBOX_W,
+    CASES_ENTRY_VIEWBOX_W,
+    casesBirthP,
+  );
+  const casesGrowViewBoxW = lerp(
+    CASES_ENTRY_VIEWBOX_W,
+    CASES_REST_VIEWBOX_W,
+    casesGrowP,
+  );
+  const casesZoomViewBoxW = lerp(
+    CASES_REST_VIEWBOX_W,
+    CASES_FINAL_VIEWBOX_W,
+    casesZoomEase,
+  );
+  const casesViewBoxW =
+    casesZoomP > 0
+      ? casesZoomViewBoxW
+      : casesGrowP > 0
+        ? casesGrowViewBoxW
+        : casesBirthViewBoxW;
+  const casesViewBoxH = casesViewBoxW / metrics.viewportAspect;
+  const casesViewBoxCenterX = lerp(
+    CASES_CENTER_X,
+    CASES_MIDDLE_S_ANCHOR_X,
+    casesZoomEase,
+  );
+  const casesViewBoxCenterY = lerp(
+    CASES_CENTER_Y,
+    CASES_MIDDLE_S_ANCHOR_Y,
+    casesZoomEase,
+  );
+  const casesViewBox = [
+    casesViewBoxCenterX - casesViewBoxW / 2,
+    casesViewBoxCenterY - casesViewBoxH / 2,
+    casesViewBoxW,
+    casesViewBoxH,
+  ]
+    .map((value) => value.toFixed(4))
+    .join(" ");
+  const whiteFillOpacity = whiteFillP * (1 - blueSwitchP);
   const stageStyle = {
     "--workflow-canvas-scale": metrics.canvasScale,
     "--workflow-progress": visualProgress.toFixed(4),
+    "--workflow-raw-progress": rawProgress.toFixed(4),
+    "--workflow-transition-progress": transitionProgress.toFixed(4),
+    "--cases-color": "#ffffff",
+    "--cases-blue-color": CASES_BLUE,
+    "--cases-white-fill-opacity": whiteFillOpacity.toFixed(4),
+    "--cases-blue-fill-opacity": blueSwitchP.toFixed(4),
     height: metrics.sectionHeight,
   } as CSSProperties;
 
   const cardStates = useMemo(
     () =>
       workflowCards.map((card) => {
-        const localProgress = remap(visualProgress, card.enter, card.exit);
+        const localProgress = remap(cardMotionProgress, card.enter, card.exit);
         const x = throughMid(
           card.xStart,
           card.xMid,
@@ -316,18 +413,21 @@ export function FourthWorkflowIntroSection() {
           )}deg) scale(${scale.toFixed(4)})`,
         };
       }),
-    [visualProgress],
+    [cardMotionProgress],
   );
 
   return (
     <section
+      id="workflow"
       aria-label="AI Agent 产品工作流"
       className={styles.fourthWorkflowIntro}
+      data-transition-progress={transitionProgress.toFixed(4)}
+      data-workflow-raw-progress={rawProgress.toFixed(4)}
       data-workflow-progress={visualProgress.toFixed(4)}
       ref={sectionRef}
       style={stageStyle}
     >
-      <div className={styles.fourthWorkflowIntro__stage}>
+      <div className={styles.fourthWorkflowIntro__stage} ref={stageRef}>
         <div className={styles.fourthWorkflowIntro__canvas}>
           <div
             className={styles.initialTitle}
@@ -369,22 +469,46 @@ export function FourthWorkflowIntroSection() {
             ))}
           </div>
 
-          <img
-            alt="工具生成可能，产品决定方向"
+          <WorkflowFinalTitleSvg
+            ariaLabel="工具生成可能，产品决定方向"
+            bottomTransform={finalTitleBottomTransform}
             className={styles.finalTitle}
-            draggable={false}
-            src="/assets/workflow-intro/workflow-final-title.svg"
             style={{
               opacity: finalOpacity,
               transform: `translate3d(-50%, calc(-50% + ${finalTranslateY.toFixed(
                 3,
               )}px), 0) scale(${finalScale.toFixed(4)})`,
             }}
+            topTransform={finalTitleTopTransform}
           />
 
           <div className={styles.debugProgress} aria-hidden="true">
             {visualProgress.toFixed(4)}
           </div>
+        </div>
+
+        <div className={styles.casesTypographyLayer} aria-hidden="true">
+          <svg
+            className={styles.casesSvg}
+            focusable="false"
+            preserveAspectRatio="xMidYMid slice"
+            viewBox={casesViewBox}
+            style={{
+              opacity: casesOpacity,
+            }}
+          >
+            <text
+              className={styles.casesSvgText}
+              dominantBaseline="middle"
+              textAnchor="middle"
+              x={CASES_CENTER_X}
+              y={CASES_CENTER_Y}
+            >
+              CASES
+            </text>
+          </svg>
+          <div className={styles.casesWhiteFill} />
+          <div className={styles.casesBlueFill} />
         </div>
       </div>
     </section>
