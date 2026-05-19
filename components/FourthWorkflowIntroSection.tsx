@@ -3,19 +3,23 @@
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  fifthProjectTitleSvgs,
+  type FifthProjectTitleSvgId,
+} from "@/components/fifthProjectTitleSvgs";
 import styles from "@/components/FourthWorkflowIntroSection.module.css";
 import { WorkflowFinalTitleSvg } from "@/components/WorkflowFinalTitleSvg";
 
 const DESIGN_W = 2048;
 const DESIGN_H = 956;
 const WORKFLOW_RANGE_VH = 5.2;
-const TRANSITION_RANGE_VH = 1.6;
+const TRANSITION_RANGE_VH = 2.8;
 const SCROLL_RANGE_VH = WORKFLOW_RANGE_VH + TRANSITION_RANGE_VH;
 const WORKFLOW_PROGRESS_END = WORKFLOW_RANGE_VH / SCROLL_RANGE_VH;
 const DEBUG_FRAME_COUNT = 185;
 const CARD_RENDER_W = 400;
 const FINAL_TITLE_SPLIT_Y = 120;
-const CASES_BLUE = "#6fa9e7";
+const CASES_BLUE = "#6FA9E7";
 const CASES_SVG_W = 1000;
 const CASES_SVG_H = 260;
 const CASES_CENTER_X = CASES_SVG_W / 2;
@@ -26,7 +30,6 @@ const CASES_REST_VIEWBOX_W = 760;
 const CASES_FINAL_VIEWBOX_W = 9;
 const CASES_MIDDLE_S_ANCHOR_X = 502.8;
 const CASES_MIDDLE_S_ANCHOR_Y = 107.5;
-
 type WorkflowCard = {
   alt: string;
   enter: number;
@@ -42,6 +45,24 @@ type WorkflowCard = {
   yMid: number;
   yStart: number;
   zIndex: number;
+};
+
+type FifthProject = {
+  enterEnd: number;
+  enterFrom: "left" | "right";
+  enterStart: number;
+  href: string;
+  index: string;
+  numberLeft: string;
+  numberSrc: string;
+  numberTop: string;
+  numberWidth: string;
+  title: string;
+  titleHeight: string;
+  titleLeft: string;
+  titleSvgId: FifthProjectTitleSvgId;
+  titleTop: string;
+  titleWidth: string;
 };
 
 type ScrollMetrics = {
@@ -157,6 +178,60 @@ const workflowCards: WorkflowCard[] = [
   },
 ];
 
+const fifthProjects: FifthProject[] = [
+  {
+    enterEnd: 0.86,
+    enterFrom: "left",
+    enterStart: 0.78,
+    href: "https://www.figma.com/proto/lLDz5lBIkJfviiTYRUxnJU/%E6%BB%A1%E4%BB%93%E7%94%A8%E6%88%B7%E7%AB%AF?t=bqPySq1F00fdutgz-1",
+    index: "01",
+    numberLeft: "18.19%",
+    numberSrc: "/assets/fifth-numbers/01.svg",
+    numberTop: "22.54%",
+    numberWidth: "20px",
+    title: "USER-SIDE PROTOTYPES",
+    titleHeight: "14.26%",
+    titleLeft: "20.03%",
+    titleSvgId: "userSidePrototypes",
+    titleTop: "22.28%",
+    titleWidth: "62.88%",
+  },
+  {
+    enterEnd: 0.92,
+    enterFrom: "right",
+    enterStart: 0.84,
+    href: "https://lanhuapp.com/link/#/invite?sid=qxpCr4fa",
+    index: "02",
+    numberLeft: "23.72%",
+    numberSrc: "/assets/fifth-numbers/02.svg",
+    numberTop: "43.45%",
+    numberWidth: "23px",
+    title: "UI DESIGN MOCKUPS",
+    titleHeight: "14.26%",
+    titleLeft: "25.71%",
+    titleSvgId: "uiDesignMockups",
+    titleTop: "43.19%",
+    titleWidth: "51.68%",
+  },
+  {
+    enterEnd: 0.98,
+    enterFrom: "left",
+    enterStart: 0.9,
+    href: "https://www.figma.com/proto/76AxNKuIzJv772KwAmHwmv/%E6%BB%A1%E4%BB%93%E5%90%8E%E5%8F%B0?t=bqPySq1F00fdutgz-1",
+    index: "03",
+    numberLeft: "19.89%",
+    numberSrc: "/assets/fifth-numbers/03.svg",
+    numberTop: "64.36%",
+    numberWidth: "23px",
+    title: "MERCHANT PROTOTYPE",
+    titleHeight: "14.26%",
+    titleLeft: "21.82%",
+    titleSvgId: "merchantPrototype",
+    titleTop: "64.11%",
+    titleWidth: "59.38%",
+  },
+];
+
 function clamp(value: number, min = 0, max = 1) {
   return Math.min(Math.max(value, min), max);
 }
@@ -216,6 +291,19 @@ function cardOpacity(cardProgress: number) {
   const fadeOut = 1 - smoothstep(0.955, 1, cardProgress);
 
   return fadeIn * fadeOut;
+}
+
+function renderProjectTitleGlyphs(paths: readonly string[], keyPrefix: string) {
+  const finalIndex = paths.length - 1;
+
+  return paths.map((path, index) => (
+    <path
+      className={styles.projectTitleGlyph}
+      d={path}
+      key={`${keyPrefix}-${index}`}
+      style={{ "--i": finalIndex - index } as CSSProperties}
+    />
+  ));
 }
 
 export function FourthWorkflowIntroSection() {
@@ -304,15 +392,23 @@ export function FourthWorkflowIntroSection() {
   const rawProgress = forcedProgress ?? progress;
   const visualProgress = remap(rawProgress, 0, WORKFLOW_PROGRESS_END);
   const transitionProgress = remap(rawProgress, WORKFLOW_PROGRESS_END, 1);
+  const titleEnterP = smoothstep(0, 0.055, visualProgress);
   const titleExitProgress = smoothstep(0.08, 0.24, visualProgress);
   const titleOpacity = 1 - titleExitProgress;
   const titleScale = lerp(1, 0.965, titleExitProgress);
   const titleTranslateY = lerp(0, -34, titleExitProgress);
+  const titleTopRevealClip = `inset(0 ${((1 - titleEnterP) * 100).toFixed(
+    3,
+  )}% 0 0)`;
+  const titleBottomRevealClip = `inset(0 0 0 ${(
+    (1 - titleEnterP) *
+    100
+  ).toFixed(3)}%)`;
   const finalProgress = smoothstep(0.66, 0.86, visualProgress);
   const cardCompletionP = smoothstep(0, 0.16, transitionProgress);
   const cardMotionProgress = visualProgress + cardCompletionP * 0.02;
-  const titleSplitP = smoothstep(0.16, 0.48, transitionProgress);
-  const titleExitP = smoothstep(0.42, 0.56, transitionProgress);
+  const titleSplitP = smoothstep(0.08, 0.42, transitionProgress);
+  const titleExitP = smoothstep(0.34, 0.42, transitionProgress);
   const finalOpacity = finalProgress * (1 - titleExitP);
   const finalTranslateY = lerp(34, 0, finalProgress);
   const finalScale = lerp(0.965, 1, finalProgress) * (1 + titleSplitP * 8);
@@ -322,12 +418,12 @@ export function FourthWorkflowIntroSection() {
   const finalTitleBottomTransform = `translate(0 ${(
     FINAL_TITLE_SPLIT_Y * titleSplitP
   ).toFixed(3)})`;
-  const casesBirthP = smoothstep(0.415, 0.5, transitionProgress);
-  const casesGrowP = smoothstep(0.5, 0.64, transitionProgress);
-  const casesZoomP = smoothstep(0.64, 0.86, transitionProgress);
-  const casesOpacityP = smoothstep(0.415, 0.43, transitionProgress);
-  const whiteFillP = smoothstep(0.84, 0.88, transitionProgress);
-  const blueSwitchP = smoothstep(0.94, 1, transitionProgress);
+  const casesBirthP = smoothstep(0.26, 0.36, transitionProgress);
+  const casesGrowP = smoothstep(0.36, 0.56, transitionProgress);
+  const casesZoomP = smoothstep(0.56, 0.72, transitionProgress);
+  const casesOpacityP = smoothstep(0.26, 0.28, transitionProgress);
+  const whiteFillP = smoothstep(0.7, 0.74, transitionProgress);
+  const blueSwitchP = smoothstep(0.74, 0.78, transitionProgress);
   const casesOpacity = casesOpacityP * (1 - blueSwitchP);
   const casesZoomEase = easeOutCubic(casesZoomP);
   const casesBirthViewBoxW = lerp(
@@ -371,6 +467,31 @@ export function FourthWorkflowIntroSection() {
     .map((value) => value.toFixed(4))
     .join(" ");
   const whiteFillOpacity = whiteFillP * (1 - blueSwitchP);
+  const projectRows = fifthProjects.map((project) => {
+    const enterP = smoothstep(
+      project.enterStart,
+      project.enterEnd,
+      transitionProgress,
+    );
+    const enterEase = easeOutCubic(enterP);
+    const startX = project.enterFrom === "left" ? -340 : 340;
+    const x = lerp(startX, 0, enterEase);
+    const opacity = smoothstep(0, 0.7, enterP);
+    const scale = lerp(0.965, 1, enterEase);
+
+    return {
+      ...project,
+      isInteractive: enterP > 0.65 && blueSwitchP > 0.98,
+      style: {
+        inset: 0,
+        opacity,
+        pointerEvents: "none",
+        transform: `translate3d(${x.toFixed(3)}px, 0, 0) scale(${scale.toFixed(
+          4,
+        )})`,
+      } satisfies CSSProperties,
+    };
+  });
   const stageStyle = {
     "--workflow-canvas-scale": metrics.canvasScale,
     "--workflow-progress": visualProgress.toFixed(4),
@@ -438,18 +559,28 @@ export function FourthWorkflowIntroSection() {
               )}px), 0) scale(${titleScale.toFixed(4)})`,
             }}
           >
+            <div
+              className={styles.initialTitle__agentReveal}
+              style={{ clipPath: titleTopRevealClip }}
+            >
             <img
               alt="AI Agent"
               className={styles.initialTitle__agent}
               draggable={false}
               src="/assets/workflow-intro/ai-agent-title.svg"
             />
+            </div>
+            <div
+              className={styles.initialTitle__workflowReveal}
+              style={{ clipPath: titleBottomRevealClip }}
+            >
             <img
               alt="产品工作流"
               className={styles.initialTitle__workflow}
               draggable={false}
               src="/assets/workflow-intro/workflow-title-cn.svg"
             />
+            </div>
           </div>
 
           <div className={styles.cardRail} aria-hidden={finalProgress >= 1}>
@@ -487,8 +618,9 @@ export function FourthWorkflowIntroSection() {
           </div>
         </div>
 
-        <div className={styles.casesTypographyLayer} aria-hidden="true">
+        <div className={styles.casesTypographyLayer}>
           <svg
+            aria-hidden="true"
             className={styles.casesSvg}
             focusable="false"
             preserveAspectRatio="xMidYMid slice"
@@ -507,8 +639,75 @@ export function FourthWorkflowIntroSection() {
               CASES
             </text>
           </svg>
-          <div className={styles.casesWhiteFill} />
-          <div className={styles.casesBlueFill} />
+          <div className={styles.casesWhiteFill} aria-hidden="true" />
+          <div className={styles.casesBlueFill} aria-hidden="true" />
+          <nav className={styles.projectLinksLayer} aria-label="Project links">
+            <div className={styles.indexCanvas}>
+              {projectRows.map((project) => (
+                <a
+                  aria-label={`${project.index} ${project.title}`}
+                  className={styles.projectLink}
+                  href={project.href}
+                  key={project.index}
+                  rel="noreferrer"
+                  style={project.style}
+                  tabIndex={project.isInteractive ? 0 : -1}
+                  target="_blank"
+                >
+                  <span
+                    className={styles.projectIndex}
+                    style={{
+                      left: project.numberLeft,
+                      pointerEvents: project.isInteractive ? "auto" : "none",
+                      top: project.numberTop,
+                      width: project.numberWidth,
+                    }}
+                  >
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className={styles.projectIndexImage}
+                      draggable={false}
+                      src={project.numberSrc}
+                    />
+                  </span>
+                  <span
+                    className={styles.projectTitle}
+                    style={{
+                      height: project.titleHeight,
+                      left: project.titleLeft,
+                      pointerEvents: project.isInteractive ? "auto" : "none",
+                      top: project.titleTop,
+                      width: project.titleWidth,
+                    }}
+                  >
+                    <span className={styles.projectTitleMask}>
+                      <svg
+                        aria-hidden="true"
+                        className={styles.projectTitleSvg}
+                        focusable="false"
+                        preserveAspectRatio="none"
+                        viewBox={fifthProjectTitleSvgs[project.titleSvgId].viewBox}
+                      >
+                        <g className={styles.projectTitleTop}>
+                          {renderProjectTitleGlyphs(
+                            fifthProjectTitleSvgs[project.titleSvgId].paths,
+                            `${project.index}-top`,
+                          )}
+                        </g>
+                        <g className={styles.projectTitleBottom}>
+                          {renderProjectTitleGlyphs(
+                            fifthProjectTitleSvgs[project.titleSvgId].paths,
+                            `${project.index}-bottom`,
+                          )}
+                        </g>
+                      </svg>
+                    </span>
+                  </span>
+                </a>
+              ))}
+            </div>
+          </nav>
         </div>
       </div>
     </section>

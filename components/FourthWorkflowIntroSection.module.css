@@ -49,6 +49,21 @@
   user-select: none;
 }
 
+.initialTitle__agentReveal,
+.initialTitle__workflowReveal {
+  display: block;
+  overflow: hidden;
+  will-change: clip-path;
+}
+
+.initialTitle__agentReveal {
+  width: 742px;
+}
+
+.initialTitle__workflowReveal {
+  width: 780px;
+}
+
 .initialTitle__agent {
   width: 742px;
 }
@@ -104,11 +119,13 @@
 .casesSvg {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
   color: var(--cases-color);
   overflow: hidden;
+  pointer-events: none;
   text-rendering: geometricPrecision;
   will-change: opacity;
 }
@@ -146,6 +163,113 @@
   z-index: 3;
   background: var(--cases-blue-color);
   opacity: var(--cases-blue-fill-opacity);
+}
+
+.projectLinksLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  color: #ffffff;
+  pointer-events: none;
+}
+
+.indexCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.projectLink {
+  position: absolute;
+  display: block;
+  color: inherit;
+  font-family:
+    var(--font-gravitica-compressed),
+    Impact,
+    "Arial Narrow",
+    sans-serif;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  outline: none;
+  overflow: visible;
+  text-decoration: none;
+  transform-origin: center center;
+  will-change: opacity, transform;
+}
+
+.projectIndex {
+  position: absolute;
+  display: block;
+  line-height: 0;
+  overflow: visible;
+}
+
+.projectIndexImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+}
+
+.projectTitle {
+  position: absolute;
+  display: block;
+  color: #ffffff;
+  line-height: 0;
+  overflow: visible;
+}
+
+.projectTitleMask {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.projectTitleSvg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.projectTitleGlyph {
+  fill: currentColor;
+  transition: transform 620ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: calc(var(--i) * 16ms);
+  transform-box: view-box;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.projectTitleTop .projectTitleGlyph {
+  transform: translateY(0%);
+}
+
+.projectTitleBottom .projectTitleGlyph {
+  transform: translateY(116%);
+}
+
+.projectTitle:hover .projectTitleTop .projectTitleGlyph,
+.projectLink:focus-visible .projectTitle .projectTitleTop .projectTitleGlyph {
+  transition-duration: 920ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i) * 22ms);
+  transform: translateY(-116%);
+}
+
+.projectTitle:hover .projectTitleBottom .projectTitleGlyph,
+.projectLink:focus-visible
+  .projectTitle
+  .projectTitleBottom
+  .projectTitleGlyph {
+  transition-duration: 920ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i) * 22ms);
+  transform: translateY(0%);
 }
 
 .debugProgress {
@@ -228,4 +352,22 @@
   .casesBlueFill {
     opacity: 1 !important;
   }
+
+  .projectLink {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: none !important;
+    will-change: auto;
+  }
+
+  .projectTitleGlyph {
+    transition: none;
+    transform: none !important;
+    will-change: auto;
+  }
+
+  .projectTitleBottom {
+    display: none;
+  }
+
 }
