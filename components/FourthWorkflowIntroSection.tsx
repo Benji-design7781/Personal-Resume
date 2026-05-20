@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -592,19 +593,23 @@ export function FourthWorkflowIntroSection() {
 
           <div className={styles.cardRail} aria-hidden={finalProgress >= 1}>
             {cardStates.map((card) => (
-              <img
+              <Image
                 alt={card.alt}
                 className={styles.workflowCard}
                 decoding="async"
                 draggable={false}
                 key={card.src}
-                loading="lazy"
+                height={532}
+                loading="eager"
+                quality={82}
+                sizes="(max-aspect-ratio: 4 / 5) 340px, 400px"
                 src={card.src}
                 style={{
                   opacity: card.opacity,
                   transform: card.transform,
                   zIndex: card.zIndex,
                 }}
+                width={400}
               />
             ))}
           </div>
