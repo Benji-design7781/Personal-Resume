@@ -1,0 +1,148 @@
+# Third Screen V2 Measurements
+
+## Global
+
+DESIGN_W = 1699
+DESIGN_TOTAL_H = 1050
+
+ACTIVE_TOP = 10
+ACTIVE_BOTTOM = 804
+ACTIVE_H = 794
+
+TAIL_H = 246
+FINAL_CAMERA_Y = -256
+
+## Path Master
+
+file = public/third-screen-v2/path-master.svg
+
+PATH_MASTER_OFFSET_X = 543
+PATH_MASTER_OFFSET_Y = 131.5
+PATH_MASTER_VIEWBOX_W = 855
+PATH_MASTER_VIEWBOX_H = 681
+
+Rule:
+Use this single master path and split it into 3 natural arc segments.
+Do not split by equal length.
+The final point of the third segment is the finale anchor.
+
+## Platform Image
+
+file = public/third-screen-v2/platform-v2.png
+
+One shared platform image.
+No shadow in PNG.
+Shadow is controlled by code.
+
+## Platforms
+
+Platform_Tail:
+x = 400
+y = 841
+w = 283
+h = 57
+role = reveal only after ball flow and finale complete
+
+Platform_01:
+x = 686
+y = 696
+w = 283
+h = 57
+
+Platform_02:
+x = 969
+y = 551
+w = 283
+h = 57
+
+Platform_03:
+x = 1252
+y = 406
+w = 283
+h = 57
+
+## Copy Layout
+
+Title area:
+x = 80
+y = 71
+w = 512
+h = 240
+
+Body area:
+x = 80
+y = 344
+w = 525
+h = 164
+
+Bottom copy:
+x = 850
+y = 870
+w = 741
+h = 108
+
+## Copy States
+
+COPY_STATE_01
+
+title:
+从不确定里
+收敛问题
+
+body:
+需求最初往往不是答案，
+而是分散的诉求、反馈和判断。
+产品的第一步，
+是先判断真正要解决的核心问题。
+
+COPY_STATE_02
+
+title:
+把分散理解
+变成共同方案
+
+body:
+好的方案不是写给自己看的，
+而是让业务、设计、研发和测试
+能在同一套理解里协作推进。
+
+COPY_STATE_03
+
+title:
+让纸面方案
+接受真实验证
+
+body:
+方案成立不等于落地成立。
+产品需要在实现、验收和反馈中不断校准，
+直到它真正能被使用。
+
+## Bottom Copy
+
+最终的产品不是一次设计出来的，
+而是在持续判断、协作推进和真实反馈中一点点成型。
+每一次修正，都是让方案更接近真实结果的过程。
+
+## Motion Rules
+
+Initial pinned window shows Figma y=10 to y=804 only.
+Everything below y=804 must stay hidden before the ball flow completes.
+
+During ball flow:
+cameraY = -10
+
+After ball flow and finale complete:
+tail reveal starts.
+cameraY moves from -10 to -256.
+
+Keep old finale behavior.
+Finale anchor = end point of third path segment.
+
+Do not change:
+sticky mechanism
+scroll progress mechanism
+getPointAtLength motion
+strokeDashoffset drawing
+wheel gain
+Lenis config
+CSS sticky natural release

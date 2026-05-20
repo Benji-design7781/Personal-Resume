@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "tsc --noEmit --incremental false"
   },
   "dependencies": {
+    "framer-motion": "^12.38.0",
+    "lenis": "^1.3.23",
     "next": "16.2.4",
     "react": "19.2.5",
     "react-dom": "19.2.5"

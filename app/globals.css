@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Coda:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Coda:wght@400;700&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -21,12 +21,23 @@
 html,
 body {
   min-height: 100%;
+  background: #ebeae4;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 body {
   margin: 0;
-  background: #f8fafc;
+  background: #ebeae4;
   color: #334155;
+  overflow-x: hidden;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 svg {

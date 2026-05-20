@@ -1,0 +1,203 @@
+.section {
+  --ability-card-orange: #6fa9e7;
+  --ability-card-orange-soft: rgba(111, 169, 231, 0.38);
+  --ability-card-orange-tint: #bdd9f6;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  width: 100vw;
+  margin-right: -50vw;
+  margin-left: -50vw;
+  overflow: hidden;
+  background: #ebeae4;
+}
+
+.wrapper {
+  position: relative;
+  width: 100vw;
+  overflow: hidden;
+  background: #ebeae4;
+}
+
+.canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1699px;
+  height: 794px;
+  transform: scale(var(--ability-cards-scale));
+  transform-origin: top left;
+}
+
+.card {
+  position: absolute;
+  overflow: hidden;
+  background: var(--ability-card-orange);
+  box-shadow: 0 8px 20px rgba(32, 76, 126, 0.06);
+  color: #ffffff;
+  user-select: none;
+  transition: none;
+}
+
+.cardInteractive {
+  cursor: pointer;
+}
+
+.headerGroup {
+  position: absolute;
+  top: 42px;
+  left: 55px;
+  width: 756px;
+  height: 345px;
+  transform-origin: top left;
+  will-change: transform;
+}
+
+.iconTile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: 90px;
+  height: 90px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--ability-card-orange-soft);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.06),
+    0 10px 20px rgba(50, 103, 165, 0.18);
+}
+
+.iconTile img {
+  display: block;
+  width: 55px;
+  height: 55px;
+}
+
+.meta {
+  position: absolute;
+  top: 15px;
+  left: 135px;
+  font-family: "Noto Sans Malayalam UI", Inter, Arial, system-ui, sans-serif;
+  font-size: 27.5px;
+  font-weight: 500;
+  line-height: 38px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.underline {
+  position: absolute;
+  top: 73px;
+  left: 135px;
+  width: 75px;
+  height: 3px;
+  background: #ffffff;
+}
+
+.title {
+  position: absolute;
+  top: 129px;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+    "Source Han Sans SC", system-ui, sans-serif;
+  font-size: 92px;
+  font-weight: 800;
+  line-height: 1.14;
+  letter-spacing: 0.03em;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.title span {
+  display: block;
+}
+
+.bodyText {
+  position: absolute;
+  top: 447px;
+  left: 55px;
+  width: 874px;
+  margin: 0;
+  color: #ffffff;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+    "Source Han Sans SC", system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 38px;
+  letter-spacing: 0.03em;
+  transform-origin: top left;
+  will-change: opacity, transform;
+}
+
+.bodyText p {
+  margin: 0;
+  padding: 0;
+  line-height: 38px;
+  font-weight: 400;
+}
+
+.bodyText p + p {
+  margin-top: 0;
+}
+
+.compactButton {
+  position: absolute;
+  top: 253px;
+  left: 55px;
+  display: flex;
+  width: 82px;
+  height: 82px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--ability-card-orange-tint);
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.compactButton::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: #ffffff;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0);
+  transform-origin: center;
+  transition: transform 540ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.compactCard:hover .compactButton::before {
+  transform: translate(-50%, -50%) scale(1.15);
+}
+
+.compactArrow {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 21px;
+  height: 37px;
+  background: #ffffff;
+  mask-image: url("/assets/ability-cards/arrow.svg");
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  pointer-events: none;
+  transition: background-color 540ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.compactCard:hover .compactArrow {
+  background: var(--ability-card-orange);
+}

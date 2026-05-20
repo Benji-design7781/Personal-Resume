@@ -1,0 +1,375 @@
+.fourthWorkflowIntro {
+  position: relative;
+  width: 100%;
+  background: #f19252;
+  overflow: clip;
+}
+
+.casesAnchor {
+  position: absolute;
+  top: calc(100% - 100svh);
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.workflowAnchor {
+  position: absolute;
+  top: 32svh;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fourthWorkflowIntro__stage {
+  position: sticky;
+  top: 0;
+  width: 100vw;
+  height: 100svh;
+  min-height: 100svh;
+  overflow: hidden;
+  background: #f19252;
+}
+
+.fourthWorkflowIntro__canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2048px;
+  height: 956px;
+  overflow: hidden;
+  transform: translate(-50%, -50%) scale(var(--workflow-canvas-scale));
+  transform-origin: center center;
+}
+
+.initialTitle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 10;
+  display: flex;
+  width: 780px;
+  flex-direction: column;
+  align-items: center;
+  gap: 42px;
+  pointer-events: none;
+  transform-origin: center center;
+  will-change: opacity, transform;
+}
+
+.initialTitle__agent,
+.initialTitle__workflow {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+}
+
+.initialTitle__agentReveal,
+.initialTitle__workflowReveal {
+  display: block;
+  overflow: hidden;
+  will-change: clip-path;
+}
+
+.initialTitle__agentReveal {
+  width: 742px;
+}
+
+.initialTitle__workflowReveal {
+  width: 780px;
+}
+
+.initialTitle__agent {
+  width: 742px;
+}
+
+.initialTitle__workflow {
+  width: 780px;
+}
+
+.cardRail {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.workflowCard {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 400px;
+  height: 532px;
+  object-fit: contain;
+  transform-origin: center center;
+  user-select: none;
+  will-change: opacity, transform;
+}
+
+.finalTitle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 18;
+  display: block;
+  width: 936px;
+  height: auto;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+  transform-origin: center center;
+  will-change: opacity, transform;
+}
+
+.casesTypographyLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  width: 100vw;
+  height: 100svh;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.casesSvg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--cases-color);
+  overflow: hidden;
+  pointer-events: none;
+  text-rendering: geometricPrecision;
+  will-change: opacity;
+}
+
+.casesSvgText {
+  fill: currentColor;
+  font-family:
+    var(--font-gravitica-compressed),
+    Impact,
+    "Arial Narrow",
+    sans-serif;
+  font-size: 248px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  shape-rendering: geometricPrecision;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.casesWhiteFill,
+.casesBlueFill {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.casesWhiteFill {
+  z-index: 2;
+  background: #ffffff;
+  opacity: var(--cases-white-fill-opacity);
+}
+
+.casesBlueFill {
+  z-index: 3;
+  background: var(--cases-blue-color);
+  opacity: var(--cases-blue-fill-opacity);
+}
+
+.projectLinksLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  color: #ffffff;
+  pointer-events: none;
+}
+
+.indexCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform: scale(1.12);
+  transform-origin: center center;
+}
+
+.projectLink {
+  position: absolute;
+  display: block;
+  color: inherit;
+  font-family:
+    var(--font-gravitica-compressed),
+    Impact,
+    "Arial Narrow",
+    sans-serif;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  outline: none;
+  overflow: visible;
+  text-decoration: none;
+  transform-origin: center center;
+  will-change: opacity, transform;
+}
+
+.projectIndex {
+  position: absolute;
+  display: block;
+  line-height: 0;
+  overflow: visible;
+}
+
+.projectIndexImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+}
+
+.projectTitle {
+  position: absolute;
+  display: block;
+  color: #ffffff;
+  line-height: 0;
+  overflow: visible;
+}
+
+.projectTitleMask {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.projectTitleSvg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.projectTitleGlyph {
+  fill: currentColor;
+  transition: transform 620ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: calc(var(--i) * 16ms);
+  transform-box: view-box;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.projectTitleTop .projectTitleGlyph {
+  transform: translateY(0%);
+}
+
+.projectTitleBottom .projectTitleGlyph {
+  transform: translateY(116%);
+}
+
+.projectTitle:hover .projectTitleTop .projectTitleGlyph,
+.projectLink:focus-visible .projectTitle .projectTitleTop .projectTitleGlyph {
+  transition-duration: 920ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i) * 22ms);
+  transform: translateY(-116%);
+}
+
+.projectTitle:hover .projectTitleBottom .projectTitleGlyph,
+.projectLink:focus-visible
+  .projectTitle
+  .projectTitleBottom
+  .projectTitleGlyph {
+  transition-duration: 920ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i) * 22ms);
+  transform: translateY(0%);
+}
+
+@media (max-aspect-ratio: 4 / 5) {
+  .initialTitle {
+    width: 700px;
+    gap: 34px;
+  }
+
+  .initialTitle__agent {
+    width: 660px;
+  }
+
+  .initialTitle__workflow {
+    width: 700px;
+  }
+
+  .workflowCard {
+    width: 340px;
+    height: 452px;
+  }
+
+  .finalTitle {
+    width: 836px;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fourthWorkflowIntro {
+    height: 100svh !important;
+  }
+
+  .fourthWorkflowIntro__stage {
+    position: relative;
+  }
+
+  .initialTitle,
+  .cardRail,
+  .finalTitle {
+    display: none;
+  }
+
+  .casesTypographyLayer {
+    z-index: 60;
+  }
+
+  .casesSvg {
+    opacity: 1 !important;
+  }
+
+  .casesSvgText {
+    fill: #ffffff;
+    will-change: auto;
+  }
+
+  .casesWhiteFill {
+    opacity: 0 !important;
+  }
+
+  .casesBlueFill {
+    opacity: 1 !important;
+  }
+
+  .projectLink {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: none !important;
+    will-change: auto;
+  }
+
+  .projectTitleGlyph {
+    transition: none;
+    transform: none !important;
+    will-change: auto;
+  }
+
+  .projectTitleBottom {
+    display: none;
+  }
+
+}
