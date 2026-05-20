@@ -601,7 +601,6 @@ export function FourthWorkflowIntroSection() {
                 key={card.src}
                 height={532}
                 loading="eager"
-                quality={82}
                 sizes="(max-aspect-ratio: 4 / 5) 340px, 400px"
                 src={card.src}
                 style={{
