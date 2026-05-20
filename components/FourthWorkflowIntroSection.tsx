@@ -616,9 +616,6 @@ export function FourthWorkflowIntroSection() {
             topTransform={finalTitleTopTransform}
           />
 
-          <div className={styles.debugProgress} aria-hidden="true">
-            {visualProgress.toFixed(4)}
-          </div>
         </div>
 
         <div className={styles.casesTypographyLayer}>

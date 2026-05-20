@@ -4,7 +4,6 @@ import { FourthWorkflowIntroSection } from "@/components/FourthWorkflowIntroSect
 import { HeroSection } from "@/components/HeroSection";
 import { HeroToSecondTransitionZone } from "@/components/HeroToSecondTransitionZone";
 import { ProductProcessBridgeSection } from "@/components/ProductProcessBridgeSection";
-import { ProductProcessSection } from "@/components/ProductProcessSection";
 import { ProductProcessV2Section } from "@/components/ProductProcessV2Section";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -34,7 +33,6 @@ export default function Home() {
       <div aria-hidden="true" className="h-[50px]" />
       <FourthWorkflowIntroSection />
       <ContactSection />
-      {/* <ProductProcessSection /> */}
     </main>
   );
 }

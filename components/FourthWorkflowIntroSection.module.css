@@ -294,26 +294,6 @@
   transform: translateY(0%);
 }
 
-.debugProgress {
-  position: absolute;
-  right: 24px;
-  bottom: 24px;
-  z-index: 80;
-  display: none;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.18);
-  color: rgba(255, 255, 255, 0.86);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1;
-  padding: 8px 10px;
-}
-
-.fourthWorkflowIntro[data-workflow-progress] .debugProgress {
-  display: none;
-}
-
 @media (max-aspect-ratio: 4 / 5) {
   .initialTitle {
     width: 700px;
