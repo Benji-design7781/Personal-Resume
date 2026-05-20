@@ -10,3 +10,4 @@ dist
 .codex-temp/
 tmp-*
 *.tsbuildinfo
+.vercel
