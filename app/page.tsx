@@ -1,4 +1,5 @@
 import { AbilityCardsTetrisStage } from "@/components/AbilityCardsTetrisStage";
+import { ContactSection } from "@/components/ContactSection";
 import { FourthWorkflowIntroSection } from "@/components/FourthWorkflowIntroSection";
 import { HeroSection } from "@/components/HeroSection";
 import { HeroToSecondTransitionZone } from "@/components/HeroToSecondTransitionZone";
@@ -32,6 +33,7 @@ export default function Home() {
       <ProductProcessV2Section />
       <div aria-hidden="true" className="h-[50px]" />
       <FourthWorkflowIntroSection />
+      <ContactSection />
       {/* <ProductProcessSection /> */}
     </main>
   );

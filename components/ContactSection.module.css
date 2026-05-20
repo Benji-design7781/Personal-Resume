@@ -1,0 +1,377 @@
+.contactSection {
+  --contact-blue-height: 40svh;
+  --contact-scale: 1;
+
+  background: #ebeae4;
+  color: #090909;
+  height: 100svh;
+  overflow: clip;
+  position: relative;
+  width: 100vw;
+}
+
+.contactStage {
+  background: #ebeae4;
+  height: 100svh;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  width: 100vw;
+}
+
+.contactAnchor {
+  height: 1px;
+  left: 0;
+  overflow-anchor: none;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 1px;
+}
+
+.contactCanvas {
+  background: #ebeae4;
+  height: 674.9px;
+  left: 50%;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%) scale(var(--contact-scale));
+  transform-origin: top center;
+  width: 1699px;
+}
+
+.contactViewport {
+  background: #ebeae4;
+  height: calc(100svh - var(--contact-blue-height, 40svh));
+  left: 0;
+  overflow: hidden;
+  position: absolute;
+  top: var(--contact-blue-height, 40svh);
+  width: 100%;
+  will-change: height, top;
+  z-index: 2;
+}
+
+.contactBlueLayer {
+  background: #6fa9e7;
+  height: var(--contact-blue-height, 40svh);
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  z-index: 1;
+}
+
+.contactTitle {
+  color: #000000;
+  font-family: Inter, "Noto Sans SC", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  height: 72px;
+  left: 617px;
+  letter-spacing: 0;
+  line-height: 36px;
+  margin: 0;
+  position: absolute;
+  text-align: center;
+  top: 74px;
+  width: 466px;
+}
+
+.contactActions {
+  inset: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+}
+
+.contactAction {
+  --contact-action-accent: #03df6d;
+  --contact-magnet-duration: 180ms;
+  --contact-magnet-x: 0px;
+  --contact-magnet-y: 0px;
+
+  align-items: center;
+  border: 2px solid #090909;
+  border-radius: 999px;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  height: 125px;
+  justify-content: center;
+  overflow: hidden;
+  position: absolute;
+  top: 188px;
+  transform: translate3d(
+    var(--contact-magnet-x, 0px),
+    var(--contact-magnet-y, 0px),
+    0
+  );
+  transition:
+    border-color 240ms ease,
+    transform var(--contact-magnet-duration, 180ms)
+      cubic-bezier(0.22, 1, 0.36, 1);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  will-change: transform;
+  width: 125px;
+}
+
+.contactAction:hover {
+  border-color: transparent;
+}
+
+.contactActionCopied {
+  border-color: transparent;
+}
+
+.contactAction:focus,
+.contactAction:focus-visible {
+  outline: none;
+}
+
+.contactAction::before {
+  background: var(--contact-action-accent);
+  border-radius: inherit;
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  transform: scale(0);
+  transform-origin: center;
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 0;
+}
+
+.contactAction:hover::before {
+  transform: scale(1);
+}
+
+.contactActionCopied::before {
+  transform: scale(1);
+}
+
+.wechatIcon {
+  left: 575px;
+}
+
+.phoneIcon {
+  left: 787px;
+}
+
+.emailIcon {
+  left: 999px;
+}
+
+.contactActionIconWrap {
+  display: block;
+  height: 50px;
+  pointer-events: none;
+  position: relative;
+  width: 50px;
+  z-index: 1;
+}
+
+.contactActionIcon {
+  inset: 0;
+  display: block;
+  height: 50px;
+  object-fit: contain;
+  position: absolute;
+  transition:
+    opacity 180ms ease,
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  width: 50px;
+}
+
+.contactActionIconFill {
+  clip-path: circle(0% at 50% 50%);
+  filter: brightness(0) invert(1);
+  transition: clip-path 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.contactAction:hover .contactActionIconFill {
+  clip-path: circle(75% at 50% 50%);
+}
+
+.contactActionCopied .contactActionIconBase,
+.contactActionCopied .contactActionIconFill {
+  opacity: 0;
+  transform: scale(0.82);
+}
+
+.contactActionCopied .contactActionIconFill {
+  clip-path: circle(75% at 50% 50%);
+}
+
+.contactActionCheckIcon {
+  color: #ffffff;
+  display: block;
+  inset: 0;
+  opacity: 0;
+  position: absolute;
+  transform: scale(0.68);
+  transition:
+    opacity 180ms ease,
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.contactActionCheckIcon svg {
+  display: block;
+  height: 50px;
+  width: 50px;
+}
+
+.contactActionCopied .contactActionCheckIcon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.contactCopiedHints {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.contactCopiedHint {
+  color: #090909;
+  font-family: "Noto Sans TC", "Noto Sans SC", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  left: var(--contact-copy-hint-left, 542px);
+  letter-spacing: 0;
+  line-height: 20px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  text-align: center;
+  top: 323px;
+  transform: translate3d(0, -6px, 0);
+  transition:
+    opacity 180ms ease,
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  width: 190px;
+}
+
+.contactCopiedHintVisible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.contactBand {
+  background: #090909;
+  height: 270px;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  top: 358px;
+  user-select: none;
+  -webkit-user-select: none;
+  width: 1699px;
+}
+
+.contactMarqueeTrack {
+  animation: contactMarquee 22s linear infinite;
+  display: flex;
+  left: 0;
+  position: absolute;
+  top: 43px;
+  transform: translate3d(0, 15px, 0);
+  width: max-content;
+  will-change: transform;
+}
+
+.contactMarqueeGroup {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.contactMarqueeText {
+  color: #ebeae4;
+  display: block;
+  flex: 0 0 auto;
+  font-family: var(--font-gravitica-compressed), Impact, "Arial Narrow", sans-serif;
+  font-size: 280px;
+  font-weight: 800;
+  height: 185px;
+  letter-spacing: 0;
+  line-height: 184.1px;
+  margin-right: 50px;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+  white-space: nowrap;
+  width: 918px;
+}
+
+@keyframes contactMarquee {
+  from {
+    transform: translate3d(0, 15px, 0);
+  }
+
+  to {
+    transform: translate3d(-50%, 15px, 0);
+  }
+}
+
+.contactFooter {
+  color: #090909;
+  font-family: "Noto Sans TC", "Noto Sans SC", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 17px;
+}
+
+.contactFooter p {
+  margin: 0;
+  position: absolute;
+  top: 643px;
+}
+
+.contactFooterLeft {
+  height: 17px;
+  left: 20px;
+  width: 361px;
+}
+
+.contactFooterRight {
+  height: 17px;
+  left: 1434px;
+  width: 246px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contactViewport {
+    height: 85svh;
+    top: 15svh;
+  }
+
+  .contactBlueLayer {
+    height: 15svh;
+  }
+
+  .contactMarqueeTrack {
+    animation: none;
+    transform: translate3d(0, 15px, 0);
+  }
+
+  .contactAction {
+    transform: none;
+    transition: none;
+  }
+
+  .contactAction::before,
+  .contactActionIconFill {
+    transition: none;
+  }
+}
