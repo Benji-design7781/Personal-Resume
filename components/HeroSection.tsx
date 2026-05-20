@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import Image from "next/image";
 
 import styles from "@/components/HeroSection.module.css";
 import { HeroTitleSplitHover } from "@/components/HeroTitleSplitHover";
@@ -106,11 +107,17 @@ export function HeroSection() {
           className={styles.heroVisualWrap}
           data-debug-name="hero-center-visual"
         >
-          <img
+          <Image
             alt=""
             className={styles.heroVisualImage}
+            decoding="async"
             draggable={false}
+            fetchPriority="high"
+            height={289}
+            priority
+            sizes="514px"
             src="/assets/hero/hero-center-visual.jpg"
+            width={514}
           />
         </div>
 

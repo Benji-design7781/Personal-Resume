@@ -20,7 +20,9 @@ export function FloatingPlatform({ className, style }: FloatingPlatformProps) {
         alt=""
         aria-hidden="true"
         className={styles.board}
+        decoding="async"
         draggable={false}
+        loading="lazy"
         src="/third-screen-v2/platform-v2.png"
       />
     </div>

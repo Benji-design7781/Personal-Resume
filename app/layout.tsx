@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 const graviticaCompressed = localFont({
   src: [
@@ -33,7 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
-      className={`${graviticaCompressed.variable} light`}
+      className={`${inter.variable} ${graviticaCompressed.variable} light`}
       suppressHydrationWarning
     >
       <body>{children}</body>

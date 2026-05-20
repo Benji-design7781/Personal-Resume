@@ -505,6 +505,8 @@ export function AbilityScenesIntroStage({
               src="/assets/ability-intro/ability.svg"
               alt="能力"
               className="ability-scenes-intro-title-svg"
+              decoding="async"
+              loading="lazy"
             />
           </div>
           <div
@@ -514,6 +516,8 @@ export function AbilityScenesIntroStage({
               src="/assets/ability-intro/happen-in.svg"
               alt="发生在"
               className="ability-scenes-intro-title-svg"
+              decoding="async"
+              loading="lazy"
             />
           </div>
           <div
@@ -523,6 +527,8 @@ export function AbilityScenesIntroStage({
               src="/assets/ability-intro/scenes.svg"
               alt="场景里"
               className="ability-scenes-intro-title-svg"
+              decoding="async"
+              loading="lazy"
             />
           </div>
 
@@ -668,7 +674,7 @@ export function AbilityScenesIntroStage({
           color: #ffffff;
           display: flex;
           flex-direction: column;
-          font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+          font-family: var(--font-sans-latin), "Helvetica Neue", Arial, sans-serif;
           font-size: 18px;
           font-weight: 700;
           letter-spacing: 0;

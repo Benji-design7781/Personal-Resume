@@ -314,14 +314,18 @@ export function ContactSection() {
                       <img
                         alt={item.label}
                         className={`${styles.contactActionIcon} ${styles.contactActionIconBase}`}
+                        decoding="async"
                         draggable={false}
+                        loading="lazy"
                         src={item.src}
                       />
                       <img
                         alt=""
                         aria-hidden="true"
                         className={`${styles.contactActionIcon} ${styles.contactActionIconFill}`}
+                        decoding="async"
                         draggable={false}
+                        loading="lazy"
                         src={item.src}
                       />
                       <span

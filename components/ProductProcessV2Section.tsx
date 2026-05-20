@@ -13,7 +13,7 @@ const TAIL_H = 246;
 const PRE_SCROLL_DESIGN = ACTIVE_TOP;
 const BACKGROUND_ORANGE = "#F19252";
 const TEXT_FONT_STACK =
-  '"Noto Sans SC", "Noto Sans CJK SC", "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif';
+  'var(--font-sans-cjk), "Noto Sans CJK SC", "Helvetica Neue", Arial, sans-serif';
 const COPY_SWITCH_01 = 0.3;
 const COPY_SWITCH_02 = 0.63;
 const PATH_MASTER_OFFSET_X = 543;
