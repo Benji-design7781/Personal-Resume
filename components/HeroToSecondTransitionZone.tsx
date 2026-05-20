@@ -30,9 +30,9 @@ const ORANGE_TAIL_COLLAPSE_RANGE_SVH =
   ORANGE_TAIL_HEIGHT_SVH - FINAL_ORANGE_GAP_SVH;
 const ORANGE_TAIL_COLLAPSE_DISTANCE_VH = 0.4;
 const FIXED_SEAM_PX = 5;
-const SMALL_TEXT_SCROLL_FACTOR = 0.1;
-const SMALL_TEXT_MAX_OFFSET = 64;
-const SMALL_TEXT_SMOOTH = 0.12;
+const SMALL_TEXT_SCROLL_FACTOR = 0.18;
+const SMALL_TEXT_MAX_OFFSET = 128;
+const SMALL_TEXT_SMOOTH = 0.18;
 
 type RectState = {
   left: number;
@@ -267,6 +267,23 @@ function isVisibleCaptureRect(rect: RectState | null, viewportHeight: number) {
       rect.top < viewportHeight * 1.1 &&
       rect.left > -rect.width * 0.5,
   );
+}
+
+function projectRectToScrollY(
+  rect: RectState | null,
+  currentScrollY: number,
+  targetScrollY: number,
+) {
+  if (!isUsableRect(rect)) {
+    return null;
+  }
+
+  return {
+    left: rect.left,
+    top: rect.top + currentScrollY - targetScrollY,
+    width: rect.width,
+    height: rect.height,
+  } satisfies RectState;
 }
 
 function uniqueElements(elements: Array<HTMLElement | null | undefined>) {
@@ -738,30 +755,38 @@ export function HeroToSecondTransitionZone() {
             ),
           );
       const liveHeroRect = readHeroRect();
+      const stickySegmentPageTop = stickyRect.top + scrollY;
+      const handoffScrollY =
+        stickySegmentPageTop + HANDOFF_THRESHOLD * transitionScrollable;
+      const projectedHeroHandoffRect = projectRectToScrollY(
+        liveHeroRect,
+        scrollY,
+        handoffScrollY,
+      );
 
       if (!handoffActive) {
         handoffCapturedRef.current = false;
 
-        if (
-          isVisibleCaptureRect(liveHeroRect, viewportHeight) &&
-          liveHeroRect
-        ) {
-          frozenHeroRectRef.current = liveHeroRect;
-          frozenHeroRectSourceRef.current = "idleLiveHero";
+        if (projectedHeroHandoffRect) {
+          frozenHeroRectRef.current = projectedHeroHandoffRect;
+          frozenHeroRectSourceRef.current = "idleProjectedHero";
         } else if (!isUsableRect(frozenHeroRectRef.current)) {
           frozenHeroRectRef.current = fallbackHeroRect;
           frozenHeroRectSourceRef.current = "fallback";
         }
       } else if (!handoffCapturedRef.current) {
-        if (
+        if (projectedHeroHandoffRect) {
+          frozenHeroRectRef.current = projectedHeroHandoffRect;
+          frozenHeroRectSourceRef.current = "handoffProjected";
+          handoffCapturedRef.current = true;
+        } else if (
           isVisibleCaptureRect(liveHeroRect, viewportHeight) &&
           liveHeroRect
         ) {
           frozenHeroRectRef.current = liveHeroRect;
           frozenHeroRectSourceRef.current = "handoffFreeze";
+          handoffCapturedRef.current = true;
         }
-
-        handoffCapturedRef.current = true;
       }
 
       if (isHeroIdle) {
@@ -1229,6 +1254,7 @@ export function HeroToSecondTransitionZone() {
         >
           <div
             data-bridge-orange-layer="true"
+            data-logo-theme="light"
             className="absolute inset-0"
             style={{
               backgroundColor: ORANGE,
@@ -1240,6 +1266,11 @@ export function HeroToSecondTransitionZone() {
 
           <div
             data-bridge-card-layer="true"
+            data-logo-theme={
+              bridgeState.bridgeCardOpacity > 0 && bridgeState.flipProgress >= 0.5
+                ? "light"
+                : undefined
+            }
             className="absolute"
             style={{
               ...cardStyle,
@@ -1452,8 +1483,10 @@ export function HeroToSecondTransitionZone() {
         ref={orangeUpperContentRef}
         data-orange-upper-content="true"
         data-content-visible={bridgeState.expandComplete ? "true" : "false"}
+        data-logo-theme={bridgeState.expandComplete ? "light" : undefined}
         aria-label="能力发生在场景里"
       >
+        <div id="scenes" data-scenes-anchor="true" aria-hidden="true" />
         <div data-orange-upper-inner="true">
           <div
             data-orange-typography-canvas="true"
@@ -1546,6 +1579,26 @@ export function HeroToSecondTransitionZone() {
           z-index: 1;
           margin-top: -100svh;
           background: ${ORANGE};
+          cursor: default;
+          user-select: none;
+          -webkit-user-select: none;
+        }
+
+        [data-orange-upper-content="true"] * {
+          user-select: none;
+          -webkit-user-select: none;
+        }
+
+        [data-scenes-anchor="true"] {
+          position: absolute;
+          top: ${TOP_BREATHING_SVH}svh;
+          left: 0;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          pointer-events: none;
+          user-select: none;
+          -webkit-user-select: none;
         }
 
         [data-orange-upper-content="true"][data-content-visible="false"] {
@@ -1578,6 +1631,8 @@ export function HeroToSecondTransitionZone() {
           overflow: hidden;
           background: ${ORANGE};
           transition: opacity 80ms linear;
+          user-select: none;
+          -webkit-user-select: none;
         }
 
         [data-orange-upper-tail="true"] {
@@ -1648,6 +1703,9 @@ export function HeroToSecondTransitionZone() {
           color: #ffffff;
           font-family: "Arial Black", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
           transform-origin: center center;
+          cursor: default;
+          user-select: none;
+          -webkit-user-select: none;
         }
 
         .bridge-typography-scale-layer {
@@ -1687,6 +1745,10 @@ export function HeroToSecondTransitionZone() {
           width: 100%;
           height: 100%;
           object-fit: contain;
+          pointer-events: none;
+          user-select: none;
+          -webkit-user-drag: none;
+          -webkit-user-select: none;
         }
 
         .bridge-reveal-mask {
@@ -1760,6 +1822,9 @@ export function HeroToSecondTransitionZone() {
           text-align: left;
           text-transform: uppercase;
           white-space: nowrap;
+          cursor: default;
+          user-select: none;
+          -webkit-user-select: none;
         }
 
         .bridge-note-motion {

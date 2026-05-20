@@ -23,13 +23,37 @@
   flex-shrink: 0;
 }
 
-.logoImage {
+.logoStack {
+  --logo-light-clip: inset(0 0 100% 0);
+
+  position: relative;
   display: block;
   width: 128px;
-  height: auto;
-  max-height: 26px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.logoImage {
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   object-position: center;
+}
+
+.logoImageBase {
+  position: relative;
+  z-index: 1;
+}
+
+.logoImageLight {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  clip-path: var(--logo-light-clip);
+  filter: brightness(0) invert(1);
+  pointer-events: none;
+  will-change: clip-path;
 }
 
 .navWrap {
@@ -106,7 +130,12 @@
   }
 
   .logoImage {
+    width: 100%;
+    height: 100%;
+  }
+
+  .logoStack {
     width: 144px;
-    max-height: 32px;
+    height: 32px;
   }
 }

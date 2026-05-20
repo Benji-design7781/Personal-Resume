@@ -183,17 +183,17 @@ const fifthProjects: FifthProject[] = [
     enterEnd: 0.86,
     enterFrom: "left",
     enterStart: 0.78,
-    href: "https://www.figma.com/proto/lLDz5lBIkJfviiTYRUxnJU/%E6%BB%A1%E4%BB%93%E7%94%A8%E6%88%B7%E7%AB%AF?t=bqPySq1F00fdutgz-1",
+    href: "https://www.figma.com/design/lLDz5lBIkJfviiTYRUxnJU/%E6%BB%A1%E4%BB%93%E7%94%A8%E6%88%B7%E7%AB%AF?node-id=0-1&t=livmBkNkwWa516v0-1",
     index: "01",
     numberLeft: "18.19%",
     numberSrc: "/assets/fifth-numbers/01.svg",
-    numberTop: "22.54%",
+    numberTop: "24.89%",
     numberWidth: "20px",
     title: "USER-SIDE PROTOTYPES",
     titleHeight: "14.26%",
     titleLeft: "20.03%",
     titleSvgId: "userSidePrototypes",
-    titleTop: "22.28%",
+    titleTop: "24.89%",
     titleWidth: "62.88%",
   },
   {
@@ -204,7 +204,7 @@ const fifthProjects: FifthProject[] = [
     index: "02",
     numberLeft: "23.72%",
     numberSrc: "/assets/fifth-numbers/02.svg",
-    numberTop: "43.45%",
+    numberTop: "43.19%",
     numberWidth: "23px",
     title: "UI DESIGN MOCKUPS",
     titleHeight: "14.26%",
@@ -217,17 +217,17 @@ const fifthProjects: FifthProject[] = [
     enterEnd: 0.98,
     enterFrom: "left",
     enterStart: 0.9,
-    href: "https://www.figma.com/proto/76AxNKuIzJv772KwAmHwmv/%E6%BB%A1%E4%BB%93%E5%90%8E%E5%8F%B0?t=bqPySq1F00fdutgz-1",
+    href: "https://www.figma.com/design/76AxNKuIzJv772KwAmHwmv/%E6%BB%A1%E4%BB%93%E5%90%8E%E5%8F%B0?t=F5NvyKL2IXsFxm55-1",
     index: "03",
     numberLeft: "19.89%",
     numberSrc: "/assets/fifth-numbers/03.svg",
-    numberTop: "64.36%",
+    numberTop: "61.50%",
     numberWidth: "23px",
     title: "MERCHANT PROTOTYPE",
     titleHeight: "14.26%",
     titleLeft: "21.82%",
     titleSvgId: "merchantPrototype",
-    titleTop: "64.11%",
+    titleTop: "61.50%",
     titleWidth: "59.38%",
   },
 ];
@@ -425,6 +425,8 @@ export function FourthWorkflowIntroSection() {
   const whiteFillP = smoothstep(0.7, 0.74, transitionProgress);
   const blueSwitchP = smoothstep(0.74, 0.78, transitionProgress);
   const casesOpacity = casesOpacityP * (1 - blueSwitchP);
+  const casesLogoDarkActive =
+    (casesZoomP > 0.03 || whiteFillP > 0.02) && blueSwitchP < 0.92;
   const casesZoomEase = easeOutCubic(casesZoomP);
   const casesBirthViewBoxW = lerp(
     CASES_TINY_VIEWBOX_W,
@@ -539,15 +541,16 @@ export function FourthWorkflowIntroSection() {
 
   return (
     <section
-      id="workflow"
       aria-label="AI Agent 产品工作流"
       className={styles.fourthWorkflowIntro}
       data-transition-progress={transitionProgress.toFixed(4)}
       data-workflow-raw-progress={rawProgress.toFixed(4)}
       data-workflow-progress={visualProgress.toFixed(4)}
+      data-logo-theme="light"
       ref={sectionRef}
       style={stageStyle}
     >
+      <div id="workflow" className={styles.workflowAnchor} aria-hidden="true" />
       <div className={styles.fourthWorkflowIntro__stage} ref={stageRef}>
         <div className={styles.fourthWorkflowIntro__canvas}>
           <div
@@ -622,6 +625,7 @@ export function FourthWorkflowIntroSection() {
           <svg
             aria-hidden="true"
             className={styles.casesSvg}
+            data-logo-theme={casesLogoDarkActive ? "dark" : undefined}
             focusable="false"
             preserveAspectRatio="xMidYMid slice"
             viewBox={casesViewBox}
@@ -639,7 +643,11 @@ export function FourthWorkflowIntroSection() {
               CASES
             </text>
           </svg>
-          <div className={styles.casesWhiteFill} aria-hidden="true" />
+          <div
+            className={styles.casesWhiteFill}
+            aria-hidden="true"
+            data-logo-theme="dark"
+          />
           <div className={styles.casesBlueFill} aria-hidden="true" />
           <nav className={styles.projectLinksLayer} aria-label="Project links">
             <div className={styles.indexCanvas}>
@@ -710,6 +718,7 @@ export function FourthWorkflowIntroSection() {
           </nav>
         </div>
       </div>
+      <div id="cases" className={styles.casesAnchor} aria-hidden="true" />
     </section>
   );
 }

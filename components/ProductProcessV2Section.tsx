@@ -367,6 +367,7 @@ export function ProductProcessV2Section() {
 
   return (
     <section
+      id="decisions"
       aria-label="\u4ea7\u54c1\u63a8\u8fdb\u8fc7\u7a0b V2 \u9759\u6001\u7a3f"
       className="relative hidden w-full overflow-x-clip py-0 min-[900px]:block"
       ref={sectionRef}
@@ -402,6 +403,7 @@ export function ProductProcessV2Section() {
           >
             <div
               aria-hidden="true"
+              data-logo-theme="light"
               style={{
                 ...rectStyle(20, 0, 1660, 1050),
                 background: BACKGROUND_ORANGE,

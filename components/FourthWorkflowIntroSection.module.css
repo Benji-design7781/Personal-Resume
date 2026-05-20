@@ -5,6 +5,26 @@
   overflow: clip;
 }
 
+.casesAnchor {
+  position: absolute;
+  top: calc(100% - 100svh);
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.workflowAnchor {
+  position: absolute;
+  top: 32svh;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .fourthWorkflowIntro__stage {
   position: sticky;
   top: 0;
@@ -179,6 +199,8 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+  transform: scale(1.12);
+  transform-origin: center center;
 }
 
 .projectLink {

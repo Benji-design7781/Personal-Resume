@@ -715,6 +715,7 @@ export function AbilityCardsTetrisStage() {
                 className={`${styles.card} ${canInteract ? styles.cardInteractive : ""} ${
                   hasCompactButton ? styles.compactCard : ""
                 }`}
+                data-logo-theme="light"
                 style={
                   {
                     left: `${rect.x}px`,
