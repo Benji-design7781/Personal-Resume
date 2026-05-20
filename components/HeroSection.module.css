@@ -3,12 +3,39 @@
   font-synthesis: none;
 }
 
+.heroIntroSection {
+  --hero-intro-bg: #ebeae4;
+  --hero-intro-dark: #090909;
+  --hero-title-entry-delay: 5120ms;
+  --hero-media-entry-delay: 6150ms;
+  --hero-scroll-entry-delay: 5900ms;
+  --hero-title-intro-y: 100%;
+  background: var(--hero-intro-bg);
+}
+
+.heroIntroSection[data-intro-state="running"],
+.heroIntroSection[data-intro-state="complete"] {
+  --hero-title-intro-y: 0%;
+}
+
 .heroSplitTitle {
   display: block;
   margin: 0;
   user-select: none;
   caret-color: transparent;
   outline: none;
+}
+
+.heroTitleIntro {
+  transition:
+    transform 900ms cubic-bezier(0.496, 0.004, 0, 1)
+      var(--hero-title-entry-delay);
+  will-change: transform;
+}
+
+.heroIntroSection[data-intro-state="complete"] .heroTitleIntro {
+  transition: none;
+  will-change: auto;
 }
 
 .heroPosterMetaText,
@@ -35,6 +62,78 @@
   object-fit: cover;
 }
 
+.heroIntroMediaImage {
+  clip-path: inset(0 0 100% 0);
+  transform: translateY(-100%) scale(1.6);
+  transform-origin: 50% 0%;
+  will-change: clip-path, transform;
+}
+
+.heroIntroTextReveal {
+  clip-path: inset(-0.25em -1em 100% -1em);
+  transform: translateY(-100%);
+  will-change: clip-path, transform;
+}
+
+.heroIntroScrollReveal {
+  opacity: 0.2;
+  transform: translateY(100%);
+  will-change: opacity, transform;
+}
+
+.heroIntroSection[data-intro-state="running"] .heroIntroMediaImage,
+.heroIntroSection[data-intro-state="complete"] .heroIntroMediaImage {
+  clip-path: inset(0 0 0% 0);
+  transform: translateY(0%) scale(1);
+}
+
+.heroIntroSection[data-intro-state="running"] .heroIntroMediaImage {
+  transition:
+    clip-path 1800ms cubic-bezier(0.16, 1, 0.3, 1)
+      var(--hero-media-entry-delay),
+    transform 1800ms cubic-bezier(0.16, 1, 0.3, 1)
+      var(--hero-media-entry-delay);
+}
+
+.heroIntroSection[data-intro-state="running"] .heroIntroTextReveal,
+.heroIntroSection[data-intro-state="complete"] .heroIntroTextReveal {
+  clip-path: inset(-0.25em -1em -0.25em -1em);
+  transform: translateY(0%);
+}
+
+.heroIntroSection[data-intro-state="running"] .heroIntroTextReveal {
+  transition:
+    clip-path 1800ms cubic-bezier(0.16, 1, 0.3, 1)
+      var(--hero-media-entry-delay),
+    transform 1800ms cubic-bezier(0.16, 1, 0.3, 1)
+      var(--hero-media-entry-delay);
+}
+
+.heroIntroSection[data-intro-state="running"] .heroIntroScrollReveal,
+.heroIntroSection[data-intro-state="complete"] .heroIntroScrollReveal {
+  opacity: 1;
+  transform: translateY(0%);
+}
+
+.heroIntroSection[data-intro-state="running"] .heroIntroScrollReveal {
+  transition:
+    opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1)
+      var(--hero-scroll-entry-delay),
+    transform 1200ms cubic-bezier(0.16, 1, 0.3, 1)
+      var(--hero-scroll-entry-delay);
+}
+
+.heroIntroSection[data-intro-state="complete"] .heroIntroMediaImage,
+.heroIntroSection[data-intro-state="complete"] .heroIntroTextReveal,
+.heroIntroSection[data-intro-state="complete"] .heroIntroScrollReveal {
+  transition: none;
+  will-change: auto;
+}
+
+.heroIntroSection[data-intro-state="complete"] .heroIntroTextReveal {
+  clip-path: none;
+}
+
 .heroTitleLetterWrapper {
   position: relative;
   display: inline-block;
@@ -58,7 +157,159 @@
   top: 0;
 }
 
+.heroIntroPreloader {
+  --preloader-digit-gap: 0.034em;
+  --preloader-digit-ink-height: 0.741em;
+  --preloader-digit-ink-top: 0.076em;
+  --preloader-digit-mask-pad: 5px;
+  --preloader-digit-window-height: calc(
+    var(--preloader-digit-ink-height) + var(--preloader-digit-mask-pad) * 2
+  );
+  --preloader-digit-line-top: calc(
+    var(--preloader-digit-mask-pad) - var(--preloader-digit-ink-top)
+  );
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: all;
+  color: #EBEAE4;
+  background: var(--hero-intro-dark);
+  clip-path: inset(0 0 0% 0);
+}
+
+.heroIntroPreloader[data-preloader-phase="leave"] {
+  animation: heroIntroPreloaderLeave 900ms cubic-bezier(0.496, 0.004, 0, 1) both;
+}
+
+.heroIntroPreloaderNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--preloader-digit-gap);
+  height: var(--preloader-digit-window-height);
+  overflow: hidden;
+  font-family: var(--font-gravitica-compressed), Impact, "Arial Narrow", sans-serif;
+  font-size: clamp(145.2px, 19.25vw, 330px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  opacity: 0;
+}
+
+.heroIntroPreloader:not([data-preloader-phase="idle"]) .heroIntroPreloaderNumber {
+  opacity: 1;
+}
+
+.heroIntroPreloaderDigitWrap {
+  position: relative;
+  display: inline-block;
+  width: 0.335em;
+  height: var(--preloader-digit-window-height);
+  overflow: hidden;
+  line-height: 1;
+}
+
+.heroIntroPreloaderDigitCurrent,
+.heroIntroPreloaderDigitNext {
+  position: absolute;
+  top: var(--preloader-digit-line-top);
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1em;
+  text-align: center;
+  line-height: 1;
+  transform: translateY(0%);
+  will-change: transform;
+}
+
+.heroIntroPreloaderDigitNext {
+  transform: translateY(112%);
+}
+
+.heroIntroPreloader[data-preloader-roll="initial"] .heroIntroPreloaderDigitCurrent {
+  animation: heroIntroDigitInitialIn 700ms cubic-bezier(0.496, 0.004, 0, 1)
+    var(--digit-delay) both;
+}
+
+.heroIntroPreloader[data-preloader-roll="update"] .heroIntroPreloaderDigitCurrent {
+  animation: heroIntroDigitCurrentOut 700ms cubic-bezier(0.496, 0.004, 0, 1)
+    var(--digit-delay) both;
+}
+
+.heroIntroPreloader[data-preloader-roll="update"] .heroIntroPreloaderDigitNext {
+  animation: heroIntroDigitNextIn 700ms cubic-bezier(0.496, 0.004, 0, 1)
+    var(--digit-delay) both;
+}
+
+.heroIntroPreloader[data-preloader-roll="leave"] .heroIntroPreloaderDigitCurrent {
+  animation: heroIntroDigitCurrentOut 700ms cubic-bezier(0.496, 0.004, 0, 1)
+    both;
+}
+
+@keyframes heroIntroDigitInitialIn {
+  from {
+    transform: translateY(112%);
+  }
+
+  to {
+    transform: translateY(0%);
+  }
+}
+
+@keyframes heroIntroDigitCurrentOut {
+  from {
+    transform: translateY(0%);
+  }
+
+  to {
+    transform: translateY(-112%);
+  }
+}
+
+@keyframes heroIntroDigitNextIn {
+  from {
+    transform: translateY(112%);
+  }
+
+  to {
+    transform: translateY(0%);
+  }
+}
+
+@keyframes heroIntroPreloaderLeave {
+  from {
+    clip-path: inset(0 0 0% 0);
+  }
+
+  to {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .heroIntroSection,
+  .heroTitleIntro,
+  .heroIntroMediaImage,
+  .heroIntroTextReveal,
+  .heroIntroScrollReveal {
+    --hero-title-intro-y: 0%;
+    clip-path: inset(0 0 0% 0);
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+
+  .heroIntroPreloader {
+    display: none;
+  }
+
   .heroTitleLetterCurrent,
   .heroTitleLetterNext {
     will-change: auto;

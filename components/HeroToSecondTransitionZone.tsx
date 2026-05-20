@@ -368,7 +368,27 @@ export function HeroToSecondTransitionZone() {
   const typographyRunIdRef = useRef(0);
   const [bridgeState, setBridgeState] =
     useState<BridgeDebugState>(initialDebugState);
+  const [viewportSize, setViewportSize] = useState({
+    height: 900,
+    width: 1440,
+  });
   const prefersReducedMotion = usePrefersReducedMotion();
+
+  useEffect(() => {
+    const syncViewportSize = () => {
+      setViewportSize({
+        height: window.innerHeight,
+        width: window.innerWidth,
+      });
+    };
+
+    syncViewportSize();
+    window.addEventListener("resize", syncViewportSize);
+
+    return () => {
+      window.removeEventListener("resize", syncViewportSize);
+    };
+  }, []);
 
   const setTypographyStateSafe = (next: TypographyState) => {
     typographyStateRef.current = next;
@@ -1177,10 +1197,8 @@ export function HeroToSecondTransitionZone() {
   const transitionIsolationActive =
     !bridgeState.expandComplete &&
     bridgeState.transitionProgress > HANDOFF_THRESHOLD;
-  const viewportWidth =
-    typeof window === "undefined" ? 1440 : window.innerWidth;
-  const viewportHeight =
-    typeof window === "undefined" ? 900 : window.innerHeight;
+  const viewportWidth = viewportSize.width;
+  const viewportHeight = viewportSize.height;
   const cardLeft = Math.max(
     0,
     Math.min(viewportWidth, bridgeState.cardCurrentRect.left),
@@ -1207,13 +1225,10 @@ export function HeroToSecondTransitionZone() {
     0,
     Math.min(viewportHeight, bridgeState.orangeContentTop),
   );
-  const typographyCanvasScale =
-    typeof window === "undefined"
-      ? 1
-      : Math.min(
-          window.innerWidth / DESIGN_WIDTH,
-          window.innerHeight / DESIGN_HEIGHT,
-        );
+  const typographyCanvasScale = Math.min(
+    viewportWidth / DESIGN_WIDTH,
+    viewportHeight / DESIGN_HEIGHT,
+  );
   const typographyLayerClassName = [
     "bridge-typography-canvas",
     typographyState === "playing" || typographyState === "played"

@@ -6,6 +6,8 @@ import { useEffect, useRef } from "react";
 import styles from "@/components/HeroSection.module.css";
 
 type HeroTitleSplitHoverProps = {
+  autoSweepDelay?: number | null;
+  autoSweepVariant?: "default" | "referenceEntry";
   className?: string;
   style?: CSSProperties;
   text: string;
@@ -22,6 +24,13 @@ const LETTER_DURATION = 560;
 const LETTER_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
 const AUTO_SWEEP_DELAY = 220;
 const AUTO_SWEEP_STAGGER = 34;
+const REFERENCE_ENTRY_CURRENT_DURATION = 1200;
+const REFERENCE_ENTRY_NEXT_DURATION = 900;
+const REFERENCE_ENTRY_NEXT_DELAY = 1000;
+const REFERENCE_ENTRY_CURRENT_STAGGER = 50;
+const REFERENCE_ENTRY_NEXT_STAGGER = 40;
+const REFERENCE_ENTRY_EASING = "cubic-bezier(0.496, 0.004, 0, 1)";
+const REFERENCE_ENTRY_NEXT_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
 
 const CURRENT_KEYFRAMES: Keyframe[] = [
   { transform: "translateX(0%)", offset: 0 },
@@ -37,6 +46,16 @@ const NEXT_KEYFRAMES: Keyframe[] = [
   { transform: "translateX(0%)", offset: 1 },
 ];
 
+const REFERENCE_ENTRY_CURRENT_KEYFRAMES: Keyframe[] = [
+  { transform: "translateX(0%)" },
+  { transform: "translateX(-100%)" },
+];
+
+const REFERENCE_ENTRY_NEXT_KEYFRAMES: Keyframe[] = [
+  { transform: "translateX(100%)" },
+  { transform: "translateX(0%)" },
+];
+
 function createLetterState(): LetterAnimationState {
   return {
     currentAnimation: null,
@@ -47,6 +66,8 @@ function createLetterState(): LetterAnimationState {
 }
 
 export function HeroTitleSplitHover({
+  autoSweepDelay = AUTO_SWEEP_DELAY,
+  autoSweepVariant = "default",
   className,
   style,
   text,
@@ -188,6 +209,98 @@ export function HeroTitleSplitHover({
     letterStatesRef.current.set(charIndex, state);
   };
 
+  const playReferenceEntrySweep = () => {
+    if (reduceMotionRef.current) {
+      return;
+    }
+
+    let sequenceIndex = 0;
+
+    Array.from(text).forEach((character, charIndex) => {
+      if (character === " ") {
+        return;
+      }
+
+      const currentLetter = currentLetterRefs.current.get(charIndex);
+      const nextLetter = nextLetterRefs.current.get(charIndex);
+      const state =
+        letterStatesRef.current.get(charIndex) ?? createLetterState();
+
+      if (!currentLetter || !nextLetter) {
+        clearLetterWork(state);
+        state.token = null;
+        letterStatesRef.current.set(charIndex, state);
+        return;
+      }
+
+      clearLetterWork(state);
+      animationTokenRef.current += 1;
+      const token = `${charIndex}-${animationTokenRef.current}`;
+      const currentDelay = sequenceIndex * REFERENCE_ENTRY_CURRENT_STAGGER;
+      const nextDelay =
+        REFERENCE_ENTRY_NEXT_DELAY +
+        sequenceIndex * REFERENCE_ENTRY_NEXT_STAGGER;
+
+      sequenceIndex += 1;
+      state.token = token;
+      setIdleTransform(charIndex);
+      letterStatesRef.current.set(charIndex, state);
+
+      state.rafId = requestAnimationFrame(() => {
+        const latestState = letterStatesRef.current.get(charIndex);
+
+        if (!latestState || latestState.token !== token) {
+          return;
+        }
+
+        latestState.rafId = null;
+
+        const currentAnimation = currentLetter.animate(
+          REFERENCE_ENTRY_CURRENT_KEYFRAMES,
+          {
+            delay: currentDelay,
+            duration: REFERENCE_ENTRY_CURRENT_DURATION,
+            easing: REFERENCE_ENTRY_EASING,
+            fill: "both",
+          },
+        );
+        const nextAnimation = nextLetter.animate(
+          REFERENCE_ENTRY_NEXT_KEYFRAMES,
+          {
+            delay: nextDelay,
+            duration: REFERENCE_ENTRY_NEXT_DURATION,
+            easing: REFERENCE_ENTRY_NEXT_EASING,
+            fill: "both",
+          },
+        );
+
+        latestState.currentAnimation = currentAnimation;
+        latestState.nextAnimation = nextAnimation;
+        letterStatesRef.current.set(charIndex, latestState);
+
+        Promise.allSettled([
+          currentAnimation.finished.catch(() => undefined),
+          nextAnimation.finished.catch(() => undefined),
+        ]).then(() => {
+          const finishedState = letterStatesRef.current.get(charIndex);
+
+          if (!finishedState || finishedState.token !== token) {
+            return;
+          }
+
+          currentAnimation.cancel();
+          nextAnimation.cancel();
+          finishedState.currentAnimation = null;
+          finishedState.nextAnimation = null;
+          setIdleTransform(charIndex);
+          letterStatesRef.current.set(charIndex, finishedState);
+        });
+      });
+
+      letterStatesRef.current.set(charIndex, state);
+    });
+  };
+
   useEffect(() => {
     Array.from(text).forEach((character, charIndex) => {
       if (character !== " ") {
@@ -204,6 +317,25 @@ export function HeroTitleSplitHover({
     });
     pendingAutoSweepTimersRef.current = [];
 
+    if (autoSweepDelay === null) {
+      return;
+    }
+
+    if (autoSweepVariant === "referenceEntry") {
+      const timerId = window.setTimeout(() => {
+        playReferenceEntrySweep();
+      }, autoSweepDelay);
+
+      pendingAutoSweepTimersRef.current.push(timerId);
+
+      return () => {
+        pendingAutoSweepTimersRef.current.forEach((pendingTimerId) => {
+          window.clearTimeout(pendingTimerId);
+        });
+        pendingAutoSweepTimersRef.current = [];
+      };
+    }
+
     Array.from(text).forEach((character, charIndex) => {
       if (character === " ") {
         return;
@@ -211,7 +343,7 @@ export function HeroTitleSplitHover({
 
       const timerId = window.setTimeout(() => {
         playLetterAnimation(charIndex);
-      }, AUTO_SWEEP_DELAY + charIndex * AUTO_SWEEP_STAGGER);
+      }, autoSweepDelay + charIndex * AUTO_SWEEP_STAGGER);
       pendingAutoSweepTimersRef.current.push(timerId);
     });
 
@@ -221,7 +353,7 @@ export function HeroTitleSplitHover({
       });
       pendingAutoSweepTimersRef.current = [];
     };
-  }, [text]);
+  }, [autoSweepDelay, autoSweepVariant, text]);
 
   const handleLetterPointerEnter = (
     _event: PointerEvent<HTMLSpanElement>,
