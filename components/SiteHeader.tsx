@@ -473,7 +473,7 @@ export function SiteHeader() {
               height={26}
               priority
               src="/assets/logo/Benji1.svg"
-              width={106}
+              width={128}
             />
             <Image
               alt=""
@@ -482,7 +482,7 @@ export function SiteHeader() {
               height={26}
               priority
               src="/assets/logo/Benji1.svg"
-              width={106}
+              width={128}
             />
           </span>
         </a>

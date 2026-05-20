@@ -569,7 +569,9 @@ export function FourthWorkflowIntroSection() {
             <img
               alt="AI Agent"
               className={styles.initialTitle__agent}
+              decoding="async"
               draggable={false}
+              loading="lazy"
               src="/assets/workflow-intro/ai-agent-title.svg"
             />
             </div>
@@ -580,7 +582,9 @@ export function FourthWorkflowIntroSection() {
             <img
               alt="产品工作流"
               className={styles.initialTitle__workflow}
+              decoding="async"
               draggable={false}
+              loading="lazy"
               src="/assets/workflow-intro/workflow-title-cn.svg"
             />
             </div>
@@ -591,8 +595,10 @@ export function FourthWorkflowIntroSection() {
               <img
                 alt={card.alt}
                 className={styles.workflowCard}
+                decoding="async"
                 draggable={false}
                 key={card.src}
+                loading="lazy"
                 src={card.src}
                 style={{
                   opacity: card.opacity,
@@ -672,7 +678,9 @@ export function FourthWorkflowIntroSection() {
                       alt=""
                       aria-hidden="true"
                       className={styles.projectIndexImage}
+                      decoding="async"
                       draggable={false}
+                      loading="lazy"
                       src={project.numberSrc}
                     />
                   </span>

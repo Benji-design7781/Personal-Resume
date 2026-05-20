@@ -284,7 +284,9 @@ export function MotionCard({
             <img
               src={previousPresentation.src}
               alt=""
+              decoding="async"
               draggable={false}
+              loading="lazy"
               className="pointer-events-none select-none"
               style={previousImageStyle ?? undefined}
             />
@@ -307,7 +309,9 @@ export function MotionCard({
             <img
               src={currentPresentation.src}
               alt=""
+              decoding="async"
               draggable={false}
+              loading="lazy"
               className="pointer-events-none select-none"
               style={currentImageStyle}
             />
@@ -323,7 +327,9 @@ export function MotionCard({
           <img
             src={currentPresentation.src}
             alt=""
+            decoding="async"
             draggable={false}
+            loading="lazy"
             className="pointer-events-none select-none"
             style={currentImageStyle}
           />

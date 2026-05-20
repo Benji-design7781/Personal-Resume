@@ -28,10 +28,10 @@ const COLORS = {
   shadow: "0 18px 48px rgba(36, 58, 103, 0.14)",
 };
 
-const serifFont = '"Noto Serif SC", "Songti SC", Georgia, serif';
+const serifFont = 'var(--font-serif-cjk)';
 const sansFont =
-  '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif';
-const interFont = '"Inter", "SF Pro Display", "Segoe UI", sans-serif';
+  'var(--font-sans-cjk)';
+const interFont = 'var(--font-sans-latin)';
 
 const clampTwoLines: CSSProperties = {
   display: "-webkit-box",

@@ -19,7 +19,7 @@ const noteBaseStyle = {
   color: "#ffffff",
   display: "flex",
   flexDirection: "column",
-  fontFamily: 'Inter, "Helvetica Neue", Arial, sans-serif',
+  fontFamily: 'var(--font-sans-latin), "Helvetica Neue", Arial, sans-serif',
   fontSize: "18px",
   fontWeight: 700,
   letterSpacing: 0,
@@ -90,6 +90,8 @@ export function AbilityScenesIntroContent({
             <img
               alt=""
               aria-hidden="true"
+              decoding="async"
+              loading="lazy"
               src="/assets/ability-intro/ability.svg"
               style={titleImageStyle}
             />
@@ -98,6 +100,8 @@ export function AbilityScenesIntroContent({
             <img
               alt=""
               aria-hidden="true"
+              decoding="async"
+              loading="lazy"
               src="/assets/ability-intro/happen-in.svg"
               style={titleImageStyle}
             />
@@ -106,6 +110,8 @@ export function AbilityScenesIntroContent({
             <img
               alt=""
               aria-hidden="true"
+              decoding="async"
+              loading="lazy"
               src="/assets/ability-intro/scenes.svg"
               style={titleImageStyle}
             />

@@ -287,7 +287,14 @@ function HeaderGroup({ card, scale }: { card: CardRecord; scale: number }) {
       style={{ transform: `scale(${scale})` }}
     >
       <div className={styles.iconTile}>
-        <img src={card.icon} alt="" aria-hidden="true" draggable={false} />
+        <img
+          src={card.icon}
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          draggable={false}
+          loading="lazy"
+        />
       </div>
       <div className={styles.meta}>{card.meta}</div>
       <div className={styles.underline} />

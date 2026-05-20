@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
@@ -1290,11 +1291,17 @@ export function HeroToSecondTransitionZone() {
                     opacity: bridgeState.frontImageOpacity,
                   }}
                 >
-                  <img
+                  <Image
                     alt=""
                     className="h-full w-full object-cover"
+                    decoding="async"
                     draggable={false}
+                    fetchPriority="high"
+                    height={289}
+                    priority
+                    sizes="514px"
                     src={HERO_VISUAL_SRC}
+                    width={514}
                   />
                 </div>
                 <div className="bridge-card-face bridge-card-back" />
@@ -1515,7 +1522,9 @@ export function HeroToSecondTransitionZone() {
                   <img
                     alt=""
                     className="bridge-title-svg"
+                    decoding="async"
                     draggable={false}
+                    loading="lazy"
                     src="/assets/ability-intro/ability.svg"
                   />
                 </div>
@@ -1523,7 +1532,9 @@ export function HeroToSecondTransitionZone() {
                   <img
                     alt=""
                     className="bridge-title-svg"
+                    decoding="async"
                     draggable={false}
+                    loading="lazy"
                     src="/assets/ability-intro/happen-in.svg"
                   />
                 </div>
@@ -1531,7 +1542,9 @@ export function HeroToSecondTransitionZone() {
                   <img
                     alt=""
                     className="bridge-title-svg"
+                    decoding="async"
                     draggable={false}
+                    loading="lazy"
                     src="/assets/ability-intro/scenes.svg"
                   />
                 </div>
@@ -1814,7 +1827,7 @@ export function HeroToSecondTransitionZone() {
           color: #ffffff;
           display: flex;
           flex-direction: column;
-          font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+          font-family: var(--font-sans-latin), "Helvetica Neue", Arial, sans-serif;
           font-size: 18px;
           font-weight: 700;
           letter-spacing: 0;
