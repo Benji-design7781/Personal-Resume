@@ -248,6 +248,25 @@ function round(value: number, precision = 3) {
   return Math.round(value * factor) / factor;
 }
 
+function getBridgeCanvasScale(viewportWidth: number, viewportHeight: number) {
+  return Math.max(
+    Math.min(viewportWidth / DESIGN_WIDTH, viewportHeight / DESIGN_HEIGHT),
+    0.0001,
+  );
+}
+
+function getBridgeScaledHeight(viewportWidth: number, viewportHeight: number) {
+  return DESIGN_HEIGHT * getBridgeCanvasScale(viewportWidth, viewportHeight);
+}
+
+function getBridgeScaledPercent(
+  viewportWidth: number,
+  viewportHeight: number,
+  percent: number,
+) {
+  return getBridgeScaledHeight(viewportWidth, viewportHeight) * (percent / 100);
+}
+
 function rectFromDomRect(rect: DOMRect): RectState {
   return {
     left: rect.left,
@@ -745,6 +764,10 @@ export function HeroToSecondTransitionZone() {
       const orangeUpperContentRect = orangeUpperContent.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
+      const scaledBridgeHeight = getBridgeScaledHeight(
+        viewportWidth,
+        viewportHeight,
+      );
       const scrollY = window.scrollY;
       const transitionScrollable = Math.max(
         1,
@@ -825,7 +848,7 @@ export function HeroToSecondTransitionZone() {
       const stickyEndY =
         stickySegment.offsetTop + stickySegment.offsetHeight - viewportHeight;
       const collapseDistance =
-        viewportHeight * ORANGE_TAIL_COLLAPSE_DISTANCE_VH;
+        scaledBridgeHeight * ORANGE_TAIL_COLLAPSE_DISTANCE_VH;
       const lowerSentinelTop = lowerCollapseSentinel
         ? lowerCollapseSentinel.getBoundingClientRect().top
         : Number.POSITIVE_INFINITY;
@@ -880,8 +903,10 @@ export function HeroToSecondTransitionZone() {
       const orangeLowerSeamRect =
         orangeLowerSeam?.getBoundingClientRect() ?? null;
       const lowerFirstVisualRect = lowerFirstVisual?.getBoundingClientRect() ?? null;
-      const fullTailPx = viewportHeight * (ORANGE_TAIL_HEIGHT_SVH / 100);
-      const minTailPx = viewportHeight * (FINAL_ORANGE_GAP_SVH / 100);
+      const fullTailPx =
+        scaledBridgeHeight * (ORANGE_TAIL_HEIGHT_SVH / 100);
+      const minTailPx =
+        scaledBridgeHeight * (FINAL_ORANGE_GAP_SVH / 100);
       const seamProbeTop =
         orangeLowerSeamRect !== null
           ? orangeLowerSeamRect.top
@@ -1229,6 +1254,36 @@ export function HeroToSecondTransitionZone() {
     viewportWidth / DESIGN_WIDTH,
     viewportHeight / DESIGN_HEIGHT,
   );
+  const bridgeOverlapPx = getBridgeScaledPercent(
+    viewportWidth,
+    viewportHeight,
+    BRIDGE_OVERLAP_SVH,
+  );
+  const transitionSegmentHeightPx = getBridgeScaledPercent(
+    viewportWidth,
+    viewportHeight,
+    TRANSITION_SEGMENT_HEIGHT_SVH,
+  );
+  const topBreathingPx = getBridgeScaledPercent(
+    viewportWidth,
+    viewportHeight,
+    TOP_BREATHING_SVH,
+  );
+  const orangeTailHeightPx = getBridgeScaledPercent(
+    viewportWidth,
+    viewportHeight,
+    ORANGE_TAIL_HEIGHT_SVH,
+  );
+  const orangeTailCollapseRangePx = getBridgeScaledPercent(
+    viewportWidth,
+    viewportHeight,
+    ORANGE_TAIL_COLLAPSE_RANGE_SVH,
+  );
+  const bridgeSizingStyle = {
+    "--bridge-orange-tail-collapse-range-px": `${orangeTailCollapseRangePx}px`,
+    "--bridge-orange-tail-height-px": `${orangeTailHeightPx}px`,
+    "--bridge-top-breathing-px": `${topBreathingPx}px`,
+  } as CSSProperties;
   const typographyLayerClassName = [
     "bridge-typography-canvas",
     typographyState === "playing" || typographyState === "played"
@@ -1246,7 +1301,7 @@ export function HeroToSecondTransitionZone() {
       data-bridge-version={BRIDGE_VERSION}
       data-hero-intro-bridge="true"
       style={{
-        marginTop: `-${BRIDGE_OVERLAP_SVH}svh`,
+        marginTop: `-${bridgeOverlapPx}px`,
         pointerEvents: "none",
       }}
       className="relative left-1/2 right-1/2 z-20 -ml-[50vw] -mr-[50vw] w-screen overflow-visible"
@@ -1255,7 +1310,7 @@ export function HeroToSecondTransitionZone() {
         ref={stickySegmentRef}
         data-bridge-transition-segment="true"
         style={{
-          height: `${TRANSITION_SEGMENT_HEIGHT_SVH}svh`,
+          height: `${transitionSegmentHeightPx}px`,
           pointerEvents: "none",
         }}
         className="relative w-screen"
@@ -1506,6 +1561,7 @@ export function HeroToSecondTransitionZone() {
         data-orange-upper-content="true"
         data-content-visible={bridgeState.expandComplete ? "true" : "false"}
         data-logo-theme={bridgeState.expandComplete ? "light" : undefined}
+        style={bridgeSizingStyle}
         aria-label="能力发生在场景里"
       >
         <div id="scenes" data-scenes-anchor="true" aria-hidden="true" />
@@ -1528,8 +1584,8 @@ export function HeroToSecondTransitionZone() {
               style={{
                 width: `${DESIGN_WIDTH}px`,
                 height: `${DESIGN_HEIGHT}px`,
-                top: `${TOP_BREATHING_SVH}svh`,
-                transform: `translateX(-50%) scale(${typographyCanvasScale})`,
+                top: "50%",
+                transform: `translate(-50%, -50%) scale(${typographyCanvasScale})`,
               }}
             >
               <div className="bridge-typography-scale-layer">
@@ -1619,7 +1675,7 @@ export function HeroToSecondTransitionZone() {
 
         [data-scenes-anchor="true"] {
           position: absolute;
-          top: ${TOP_BREATHING_SVH}svh;
+          top: var(--bridge-top-breathing-px);
           left: 0;
           width: 1px;
           height: 1px;
@@ -1654,7 +1710,7 @@ export function HeroToSecondTransitionZone() {
         [data-orange-upper-inner="true"] {
           position: relative;
           min-height: 100svh;
-          padding-top: ${TOP_BREATHING_SVH}svh;
+          padding-top: var(--bridge-top-breathing-px);
           box-sizing: border-box;
           overflow: hidden;
           background: ${ORANGE};
@@ -1665,8 +1721,8 @@ export function HeroToSecondTransitionZone() {
 
         [data-orange-upper-tail="true"] {
           height: calc(
-            ${ORANGE_TAIL_HEIGHT_SVH}svh -
-              ${ORANGE_TAIL_COLLAPSE_RANGE_SVH}svh *
+            var(--bridge-orange-tail-height-px) -
+              var(--bridge-orange-tail-collapse-range-px) *
               var(--orange-tail-collapse-progress, 0)
           );
           background: ${ORANGE};

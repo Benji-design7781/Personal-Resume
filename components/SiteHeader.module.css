@@ -1,7 +1,9 @@
 .header {
+  --site-header-scale: 1;
+
   position: fixed;
   inset-inline: 0;
-  top: 16px;
+  top: calc(16px * var(--site-header-scale));
   z-index: 90;
   background: transparent;
   pointer-events: none;
@@ -11,13 +13,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-inline: clamp(24px, 4vw, 56px);
+  padding-inline: calc(clamp(24px, 4vw, 56px) * var(--site-header-scale));
   pointer-events: auto;
 }
 
 .logoLink {
   display: flex;
-  height: 40px;
+  height: calc(40px * var(--site-header-scale));
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
@@ -28,8 +30,8 @@
 
   position: relative;
   display: block;
-  width: 128px;
-  height: 26px;
+  width: calc(128px * var(--site-header-scale));
+  height: calc(26px * var(--site-header-scale));
   flex-shrink: 0;
 }
 
@@ -64,7 +66,7 @@
 
 .navFrame {
   position: relative;
-  height: 37px;
+  height: calc(37px * var(--site-header-scale));
   flex-shrink: 0;
   overflow: visible;
 }
@@ -77,6 +79,9 @@
   height: 37px;
   overflow: visible;
   filter: drop-shadow(0 8px 20px rgba(15, 23, 42, 0.08));
+  transform: scale(var(--site-header-scale));
+  transform-origin: top right;
+  will-change: transform;
 }
 
 .navSvg {
@@ -135,7 +140,7 @@
   }
 
   .logoStack {
-    width: 144px;
-    height: 32px;
+    width: calc(144px * var(--site-header-scale));
+    height: calc(32px * var(--site-header-scale));
   }
 }

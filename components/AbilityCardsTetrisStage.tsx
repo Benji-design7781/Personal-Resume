@@ -464,17 +464,47 @@ export function AbilityCardsTetrisStage() {
       return;
     }
 
+    let scaleFrameId: number | null = null;
+
     const updateScale = () => {
-      setScale(wrapper.clientWidth / DESIGN_W);
+      const rect = wrapper.getBoundingClientRect();
+      const viewportHeight =
+        window.visualViewport?.height ?? window.innerHeight;
+      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+      const availableWidth = rect.width > 0 ? rect.width : viewportWidth;
+      const nextScale = Math.min(
+        availableWidth / DESIGN_W,
+        viewportHeight / DESIGN_H,
+      );
+
+      setScale(Number.isFinite(nextScale) && nextScale > 0 ? nextScale : 1);
+    };
+    const scheduleUpdateScale = () => {
+      if (scaleFrameId !== null) {
+        return;
+      }
+
+      scaleFrameId = window.requestAnimationFrame(() => {
+        scaleFrameId = null;
+        updateScale();
+      });
     };
 
     updateScale();
 
-    const observer = new ResizeObserver(updateScale);
+    const observer = new ResizeObserver(scheduleUpdateScale);
     observer.observe(wrapper);
+    window.addEventListener("resize", scheduleUpdateScale);
+    window.visualViewport?.addEventListener("resize", scheduleUpdateScale);
 
     return () => {
       observer.disconnect();
+      window.removeEventListener("resize", scheduleUpdateScale);
+      window.visualViewport?.removeEventListener("resize", scheduleUpdateScale);
+
+      if (scaleFrameId !== null) {
+        window.cancelAnimationFrame(scaleFrameId);
+      }
     };
   }, []);
 
@@ -705,7 +735,6 @@ export function AbilityCardsTetrisStage() {
       <div
         ref={wrapperRef}
         className={styles.wrapper}
-        style={{ height: `${DESIGN_H * scale}px` }}
       >
         <div className={styles.canvas}>
           {cardIds.map((id) => {

@@ -44,6 +44,15 @@ const ANIMATION_DURATION = 300;
 const EMPTY_LOGO_LIGHT_CLIP = "inset(0 0 100% 0)";
 const MIN_THEME_OPACITY = 0.05;
 const MIN_BLOCKER_OPACITY = 0.55;
+const HEADER_BASE_DPR_STORAGE_KEY = "benji:site-header-base-dpr:v1";
+const MAX_HEADER_SCALE = 4;
+const MIN_HEADER_SCALE = 0.25;
+
+type HeaderBaseDprRecord = {
+  dpr: number;
+  screenHeight: number;
+  screenWidth: number;
+};
 
 function getGaps(hoverIndex: number | null) {
   const gaps = [0, 0, 0, 0];
@@ -100,6 +109,106 @@ function easeOutQuart(t: number) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function getCurrentDpr() {
+  if (typeof window === "undefined") {
+    return 1;
+  }
+
+  return Number.isFinite(window.devicePixelRatio) && window.devicePixelRatio > 0
+    ? window.devicePixelRatio
+    : 1;
+}
+
+function getScreenSize() {
+  if (typeof window === "undefined") {
+    return { height: 0, width: 0 };
+  }
+
+  return {
+    height: window.screen?.height ?? 0,
+    width: window.screen?.width ?? 0,
+  };
+}
+
+function isValidBaseDprRecord(
+  value: unknown,
+  screenSize: ReturnType<typeof getScreenSize>,
+): value is HeaderBaseDprRecord {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const record = value as HeaderBaseDprRecord;
+
+  return (
+    Number.isFinite(record.dpr) &&
+    record.dpr > 0 &&
+    record.screenHeight === screenSize.height &&
+    record.screenWidth === screenSize.width
+  );
+}
+
+function readHeaderBaseDpr() {
+  const currentDpr = getCurrentDpr();
+  const screenSize = getScreenSize();
+
+  try {
+    const stored = window.sessionStorage.getItem(HEADER_BASE_DPR_STORAGE_KEY);
+
+    if (stored) {
+      const parsed = JSON.parse(stored);
+
+      if (isValidBaseDprRecord(parsed, screenSize)) {
+        return parsed.dpr;
+      }
+    }
+
+    window.sessionStorage.setItem(
+      HEADER_BASE_DPR_STORAGE_KEY,
+      JSON.stringify({
+        dpr: currentDpr,
+        screenHeight: screenSize.height,
+        screenWidth: screenSize.width,
+      } satisfies HeaderBaseDprRecord),
+    );
+  } catch {
+    return currentDpr;
+  }
+
+  return currentDpr;
+}
+
+function getHeaderScale(baseDpr: number) {
+  const scale = baseDpr / getCurrentDpr();
+
+  return Number.isFinite(scale)
+    ? clamp(scale, MIN_HEADER_SCALE, MAX_HEADER_SCALE)
+    : 1;
+}
+
+function useHeaderScale() {
+  const [scale, setScale] = useState(1);
+  const baseDprRef = useRef(1);
+
+  useEffect(() => {
+    const updateScale = () => {
+      baseDprRef.current = readHeaderBaseDpr();
+      setScale(getHeaderScale(baseDprRef.current));
+    };
+
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    window.visualViewport?.addEventListener("resize", updateScale);
+
+    return () => {
+      window.removeEventListener("resize", updateScale);
+      window.visualViewport?.removeEventListener("resize", updateScale);
+    };
+  }, []);
+
+  return scale;
 }
 
 function mergeIntervals(intervals: ThemeInterval[]) {
@@ -380,6 +489,7 @@ function buildBridgePaths(rects: RectLayout[]) {
 export function SiteHeader() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [logoLightClip, setLogoLightClip] = useState(EMPTY_LOGO_LIGHT_CLIP);
+  const headerScale = useHeaderScale();
   const logoRef = useRef<HTMLSpanElement | null>(null);
   const logoClipRef = useRef(EMPTY_LOGO_LIGHT_CLIP);
   const logoFrameRef = useRef<number | null>(null);
@@ -454,7 +564,10 @@ export function SiteHeader() {
   }, []);
 
   return (
-    <header className={styles.header}>
+    <header
+      className={styles.header}
+      style={{ "--site-header-scale": headerScale } as CSSProperties}
+    >
       <div className={styles.inner}>
         <a className={styles.logoLink} href="#home">
           <span
@@ -491,7 +604,9 @@ export function SiteHeader() {
           <div
             className={styles.navFrame}
             onMouseLeave={() => setHoveredIndex(null)}
-            style={{ width: `${MAX_NAV_WIDTH}px` }}
+            style={{
+              width: `calc(${MAX_NAV_WIDTH}px * var(--site-header-scale))`,
+            }}
           >
             <div
               className={styles.navRoot}

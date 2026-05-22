@@ -5,6 +5,7 @@
   overflow: visible;
   pointer-events: none;
   isolation: isolate;
+  container-type: inline-size;
 }
 
 .shadowSoft,
@@ -17,37 +18,37 @@
 }
 
 .shadowSoft {
-  left: -58px;
-  top: 28px;
-  width: 330px;
-  height: 76px;
+  left: -20.495cqw;
+  top: 9.894cqw;
+  width: 116.608cqw;
+  height: 26.855cqw;
   border-radius: 999px;
   background: rgba(114, 81, 43, 0.12);
-  filter: blur(32px);
+  filter: blur(11.307cqw);
   transform: skewX(-12deg);
   z-index: 1;
 }
 
 .shadowMain {
-  left: -50px;
-  top: 32px;
-  width: 305px;
-  height: 54px;
+  left: -17.668cqw;
+  top: 11.307cqw;
+  width: 107.774cqw;
+  height: 19.081cqw;
   border-radius: 26px;
   background: rgba(80, 53, 30, 0.2);
-  filter: blur(20px);
+  filter: blur(7.067cqw);
   transform: skewX(-18deg) scaleX(1.04);
   z-index: 2;
 }
 
 .shadowContact {
-  left: 20px;
-  top: 42px;
-  width: 230px;
-  height: 16px;
+  left: 7.067cqw;
+  top: 14.841cqw;
+  width: 81.272cqw;
+  height: 5.654cqw;
   border-radius: 999px;
   background: rgba(58, 36, 21, 0.24);
-  filter: blur(8px);
+  filter: blur(2.827cqw);
   z-index: 3;
 }
 

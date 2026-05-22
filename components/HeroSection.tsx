@@ -16,7 +16,7 @@ const PRELOADER_ROLL_TOTAL =
 const PRELOADER_INITIAL_DELAY = 320;
 const PRELOADER_AFTER_INITIAL_HOLD = 420;
 const PRELOADER_AFTER_MID_HOLD = 560;
-const PRELOADER_AFTER_FINAL_HOLD = 940;
+const PRELOADER_AFTER_FINAL_HOLD = 160;
 const PRELOADER_LEAVE_DURATION = 900;
 const PRELOADER_REMOVE_PADDING = 120;
 const PRELOADER_LEAVE_DELAY =
@@ -47,6 +47,8 @@ const stageStyle = {
   width: `${DESIGN_WIDTH}px`,
   height: `${DESIGN_HEIGHT}px`,
   flex: "0 0 auto",
+  transform: "scale(var(--hero-stage-scale))",
+  transformOrigin: "center center",
 } satisfies CSSProperties;
 
 const titleStyle = {
@@ -223,6 +225,27 @@ function HeroIntroPreloader() {
 
 export function HeroSection() {
   const [introState, setIntroState] = useState<HeroIntroState>("pending");
+  const [stageScale, setStageScale] = useState(1);
+
+  useEffect(() => {
+    const syncStageScale = () => {
+      const nextScale = Math.min(
+        window.innerWidth / DESIGN_WIDTH,
+        window.innerHeight / DESIGN_HEIGHT,
+      );
+
+      setStageScale(Number.isFinite(nextScale) && nextScale > 0 ? nextScale : 1);
+    };
+
+    syncStageScale();
+    window.addEventListener("resize", syncStageScale);
+    window.visualViewport?.addEventListener("resize", syncStageScale);
+
+    return () => {
+      window.removeEventListener("resize", syncStageScale);
+      window.visualViewport?.removeEventListener("resize", syncStageScale);
+    };
+  }, []);
 
   useEffect(() => {
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -264,6 +287,7 @@ export function HeroSection() {
       id="home"
       className={`${styles.heroIntroSection} relative flex min-h-screen w-full justify-center overflow-hidden bg-[#EBEAE4]`}
       data-intro-state={introState}
+      style={{ "--hero-stage-scale": stageScale } as CSSProperties}
     >
       <HeroIntroPreloader />
 

@@ -2,11 +2,11 @@
   width: 100%;
   background: #ebeae4;
   overflow-x: clip;
-  padding-bottom: 100px;
+  padding-bottom: clamp(48px, 5.886vw, 100px);
 }
 
 .frame {
-  width: min(100%, 1699px);
+  width: 100vw;
   aspect-ratio: 1699 / 360;
   margin: 0 auto;
   background: #ebeae4;

@@ -6,6 +6,8 @@
   left: 50%;
   right: 50%;
   width: 100vw;
+  height: calc(794px * var(--ability-cards-scale));
+  min-height: calc(794px * var(--ability-cards-scale));
   margin-right: -50vw;
   margin-left: -50vw;
   overflow: hidden;
@@ -15,6 +17,7 @@
 .wrapper {
   position: relative;
   width: 100vw;
+  height: calc(794px * var(--ability-cards-scale));
   overflow: hidden;
   background: #ebeae4;
 }
@@ -22,11 +25,11 @@
 .canvas {
   position: absolute;
   top: 0;
-  left: 0;
+  left: 50%;
   width: 1699px;
   height: 794px;
-  transform: scale(var(--ability-cards-scale));
-  transform-origin: top left;
+  transform: translateX(-50%) scale(var(--ability-cards-scale));
+  transform-origin: top center;
 }
 
 .card {

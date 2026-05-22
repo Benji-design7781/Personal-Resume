@@ -11,7 +11,13 @@ const ACTIVE_TOP = 10;
 const ACTIVE_H = 794;
 const TAIL_H = 246;
 const PRE_SCROLL_DESIGN = ACTIVE_TOP;
+const ROUTE_SCROLL_DESIGN = ACTIVE_H * 1.65;
+const FINALE_SCROLL_DESIGN = ACTIVE_H * 0.42;
+const TAIL_SCROLL_DESIGN = TAIL_H * 1.35;
+const TAIL_SCROLL_MIN_DESIGN = ACTIVE_H * 0.32;
 const BACKGROUND_ORANGE = "#F19252";
+const ORANGE_PANEL_X = 20;
+const ORANGE_PANEL_W = 1660;
 const TEXT_FONT_STACK =
   'var(--font-sans-cjk), "Noto Sans CJK SC", "Helvetica Neue", Arial, sans-serif';
 const COPY_SWITCH_01 = 0.3;
@@ -185,6 +191,8 @@ type ScrollMetrics = {
   preScroll: number;
   routeScroll: number;
   sectionHeight: number;
+  stageHeight: number;
+  stageWidth: number;
   stickyHeight: number;
   tailScroll: number;
   totalScrollRange: number;
@@ -195,6 +203,8 @@ const DEFAULT_SCROLL_METRICS: ScrollMetrics = {
   preScroll: 1,
   routeScroll: 1,
   sectionHeight: 1000,
+  stageHeight: ACTIVE_H,
+  stageWidth: DESIGN_W,
   stickyHeight: 1000,
   tailScroll: 1,
   totalScrollRange: 3,
@@ -250,6 +260,8 @@ export function ProductProcessV2Section() {
     smallStarStartY + (smallStarFinalY - smallStarStartY) * easedSmallStar;
   const bigStarX = 0.1 * badgeRadius;
   const bigStarY = 0.08 * badgeRadius;
+  const orangePanelWidth =
+    scrollMetrics.stageWidth * (ORANGE_PANEL_W / DESIGN_W);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -262,13 +274,19 @@ export function ProductProcessV2Section() {
 
     const readMetrics = (): ScrollMetrics => {
       const viewportHeight = window.innerHeight;
-      const stageWidth = activeViewport.getBoundingClientRect().width;
-      const scale = Math.min(stageWidth / DESIGN_W, 1);
+      const viewportWidth = stickyStage.getBoundingClientRect().width || window.innerWidth;
+      const scale = Math.max(
+        Math.min(viewportWidth / DESIGN_W, viewportHeight / ACTIVE_H),
+        0.0001,
+      );
+      const stageWidth = DESIGN_W * scale;
+      const stageHeight = ACTIVE_H * scale;
       const stickyHeight = viewportHeight;
       const preScroll = PRE_SCROLL_DESIGN * scale;
-      const routeScroll = viewportHeight * 1.65;
-      const finaleScroll = viewportHeight * 0.42;
-      const tailScroll = Math.max(TAIL_H * scale * 1.35, viewportHeight * 0.32);
+      const routeScroll = ROUTE_SCROLL_DESIGN * scale;
+      const finaleScroll = FINALE_SCROLL_DESIGN * scale;
+      const tailScroll =
+        Math.max(TAIL_SCROLL_DESIGN, TAIL_SCROLL_MIN_DESIGN) * scale;
       const totalScrollRange = preScroll + routeScroll + finaleScroll + tailScroll;
 
       return {
@@ -276,6 +294,8 @@ export function ProductProcessV2Section() {
         preScroll,
         routeScroll,
         sectionHeight: stickyHeight + totalScrollRange,
+        stageHeight,
+        stageWidth,
         stickyHeight,
         tailScroll,
         totalScrollRange,
@@ -378,6 +398,9 @@ export function ProductProcessV2Section() {
         ref={stickyStageRef}
         style={{
           background: "transparent",
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "center",
           height: "100svh",
           overflow: "hidden",
           position: "sticky",
@@ -385,12 +408,31 @@ export function ProductProcessV2Section() {
         }}
       >
         <div
+          aria-hidden="true"
+          data-logo-theme="light"
+          style={{
+            background: BACKGROUND_ORANGE,
+            height: "100%",
+            left: "50%",
+            pointerEvents: "none",
+            position: "absolute",
+            top: 0,
+            transform: "translateX(-50%)",
+            width: `${orangePanelWidth}px`,
+            zIndex: 0,
+          }}
+        />
+
+        <div
           className="relative mx-auto w-full max-w-[1699px]"
           ref={activeViewportRef}
           style={{
-            aspectRatio: `${DESIGN_W} / ${ACTIVE_H}`,
             containerType: "inline-size",
+            flex: "0 0 auto",
+            height: `${scrollMetrics.stageHeight}px`,
+            maxWidth: "none",
             overflow: "hidden",
+            width: `${scrollMetrics.stageWidth}px`,
             zIndex: 1,
           }}
         >
@@ -405,7 +447,7 @@ export function ProductProcessV2Section() {
               aria-hidden="true"
               data-logo-theme="light"
               style={{
-                ...rectStyle(20, 0, 1660, 1050),
+                ...rectStyle(ORANGE_PANEL_X, 0, ORANGE_PANEL_W, 1050),
                 background: BACKGROUND_ORANGE,
                 borderRadius: 10,
               }}
